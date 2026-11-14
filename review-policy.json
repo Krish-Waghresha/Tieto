@@ -45,7 +45,7 @@
         "ReportDiagnostic"
       ],
       "why": "Changes to what an analyzer or generator reports change what every user of the library is warned about.",
-      "motivated_by": "MessagePack #2283: a silently missing resolver shipped across two releases. MiFID II RTS 6 Art. 11(1): depth of review proportionate to the change."
+      "motivated_by": "MessagePack #2283 itself: a generator failure left apps silently without a resolver across two releases."
     },
     {
       "id": "R-CROSSCUT",

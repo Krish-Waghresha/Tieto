@@ -128,10 +128,7 @@ def render(ledger: dict, prefix: str = "") -> str:
         ("evidence", "Evidence"), ("coverage", "Coverage"), ("quiz", "Quiz"), ("audio", "Listen"), ("sign", "Sign")]) + "</nav>")
 
     # what to do + glance
-    H.append('<section id="todo"><h2>What to do</h2><ol class="todo">')
-    for w in ledger["what_to_do"]:
-        H.append(f"<li>{e(w['text'])} " + " ".join(f'<a href="#{e(r)}" class="ref">{e(r)}</a>' for r in w["refs"]) + "</li>")
-    H.append('<li>Answer the <a href="#quiz">3 quick questions</a>, then <a href="#sign">sign</a>.</li></ol>')
+    H.append('<section id="todo">')
     s_ = ledger.get("summary") or {}
     if s_:
         H.append(f'<p class="callout"><b>What this PR does:</b> {e(s_.get("what", ""))}<br><b>Bot\'s read:</b> {e(s_.get("verdict", ""))}<br>'
@@ -139,6 +136,11 @@ def render(ledger: dict, prefix: str = "") -> str:
     ran = [p for p in ledger["proofs"] if p.get("status") == "executed"]
     H.append(f'<p class="callout {"risk" if not ran else ""}"><b>Checks run: {len(ran)} of {len(ledger["proofs"])}</b>'
              + (" — nothing executed yet; below is tool facts and AI reasoning." if not ran else "") + "</p>")
+    H.append('<h2>What to do</h2><ol class="todo">')
+    for w in ledger["what_to_do"]:
+        H.append(f"<li>{e(w['text'])} " + " ".join(f'<a href="#{e(r)}" class="ref">{e(r)}</a>' for r in w["refs"]) + "</li>")
+    H.append('<li>Answer the <a href="#quiz">3 quick questions</a>, then <a href="#sign">sign</a>.</li></ol>')
+
     H.append(f'<h3>Evidence at a glance</h3>{grade_bar(ledger["grade_counts"])}')
     for s in ledger["scope"]:
         if s["mismatch"]:

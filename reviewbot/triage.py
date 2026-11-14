@@ -108,7 +108,7 @@ def run(files: list[FileDiff], policy: dict, sources: dict[str, tuple[str, str]]
                 if any(p.search(l) for l in h.added + h.removed for p in pats):
                     where.append(h.short_id)
         if where:
-            fire("R-DIAG-POLICY", where, f"{len(where)} hunk(s) change diagnostic reporting in analyzer/generator code", "PROVEN")
+            fire("R-DIAG-POLICY", where, f"{len(where)} changed block(s) alter diagnostic reporting in analyzer/generator code", "PROVEN")
 
     # R-CROSSCUT: field assignments changed → invocation fan-out
     r = rules.get("R-CROSSCUT")
