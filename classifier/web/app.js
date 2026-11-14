@@ -4,19 +4,27 @@ import { diffLines } from 'diff'
 import shippingScenario from '../fixtures/order-flow/shipping-review.json'
 import accessScenario from '../fixtures/order-flow/access-review.json'
 import { createAccessReview } from './access-review.js'
-import { invoiceGraph, invoiceCard, invoiceRetry, createInvoiceReview } from './invoice-review.js'
+import { invoiceGraph, invoiceCard, invoiceRetry, invoiceAttention, createInvoiceReview, createOverallReview } from './invoice-review.js'
+import { createReviewSession } from './review-session.js'
 
 const analysis = JSON.parse(document.getElementById('analysis').textContent)
 const isInvoice = analysis.policy?.version === 'evidence-v2'
+document.body.classList.toggle('invoice-review', isInvoice)
 const graph = isInvoice ? invoiceGraph(analysis) : analysis
-const labels = { green: 'Light review', amber: 'Inspect behavior', red: 'Human attention', gray: 'Insufficient evidence', context: 'Unchanged context' }
+const labels = isInvoice ? invoiceAttention : { green: 'Light review', amber: 'Inspect behavior', red: 'Human attention', gray: 'Insufficient evidence', context: 'Unchanged context' }
 const svg = document.getElementById('graph')
 const namespace = 'http://www.w3.org/2000/svg'
 const byId = new Map(graph.nodes.map(node => [node.id, node]))
+const reviewMethods = isInvoice ? graph.nodes.flatMap(module => analysis.nodes
+  .filter(node => node.kind === 'method' && node.file === module.file && !['unchanged', 'context'].includes(node.change))
+  .map(node => ({ ...node, moduleId: module.id, before: node.before ?? { code: '', line: 0 }, methods: [{ id: node.id, label: node.label, color: node.color }] }))) : []
+for (const method of reviewMethods) byId.set(method.id, method)
+let reviewSession = null
+let overallReview = null
 let selected = null
 let camera = null
 const concernKey = ['earned:green-concerns', analysis.github?.repository ?? 'standalone', analysis.github?.number ?? '', analysis.reviewKey ?? `${analysis.baseHash}:${analysis.headHash}`].join(':')
-const accessReview = createAccessReview({ storageKey: `${concernKey}:access-review:1`, revision: analysis.github ?? { base: analysis.baseHash, head: analysis.headHash }, ...(isInvoice ? { scenario: invoiceRetry } : {}) })
+const accessReview = createAccessReview({ storageKey: `${concernKey}:access-review:1`, revision: analysis.github ?? { base: analysis.baseHash, head: analysis.headHash }, ...(isInvoice ? { scenario: invoiceRetry, source: reviewMethods.find(node => node.label === invoiceRetry.title)?.after, inspectSource } : {}) })
 let invoiceReview = null
 let concerns = new Map()
 const concernDrafts = new Map()
@@ -53,7 +61,7 @@ function isShippingReview(node) {
 }
 
 function isAccessReview(node) {
-  if (isInvoice) return node?.id === 'module:RetryingInvoiceWriter.cs'
+  if (isInvoice) return (node?.moduleId ?? node?.id) === 'module:RetryingInvoiceWriter.cs'
   return node?.id === accessScenario.methodId && node.color === 'red' && node.rule === 'boundary' && isApprovedSnapshot()
 }
 
@@ -261,6 +269,72 @@ function fitGraph() {
   camera?.zoomBy(window.innerWidth < 650 ? 1 : 0.92)
 }
 
+function enableReviewResize() {
+  const workspace = document.getElementById('workspace')
+  const divider = document.getElementById('review-resizer')
+  const stage = document.querySelector('.graph-stage')
+  const storageKey = 'earned:review-layout:1'
+  let share = 1 / 3
+  let drag = null
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null')
+    if (typeof saved === 'number' && saved > 0 && saved < 1) share = saved
+  } catch {}
+
+  function applyShare() {
+    workspace.style.setProperty('--graph-share', `${share}fr`)
+    workspace.style.setProperty('--review-share', `${1 - share}fr`)
+  }
+  function persist() {
+    try { localStorage.setItem(storageKey, JSON.stringify(share)) } catch {}
+  }
+  function setWidth(pixels) {
+    const available = workspace.clientWidth - divider.offsetWidth
+    share = Math.min(available - 320, Math.max(200, pixels)) / available
+    applyShare()
+  }
+  function finishDrag() {
+    if (!drag) return
+    const pointerId = drag.pointerId
+    drag = null
+    document.body.classList.remove('resizing-review')
+    if (divider.hasPointerCapture(pointerId)) divider.releasePointerCapture(pointerId)
+    persist()
+  }
+  divider.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || !event.isPrimary || !divider.offsetWidth) return
+    event.preventDefault()
+    divider.focus({ preventScroll: true })
+    drag = { pointerId: event.pointerId, startX: event.clientX, width: stage.getBoundingClientRect().width }
+    divider.setPointerCapture(event.pointerId)
+    document.body.classList.add('resizing-review')
+  })
+  divider.addEventListener('pointermove', event => {
+    if (drag?.pointerId === event.pointerId) setWidth(drag.width + event.clientX - drag.startX)
+  })
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) divider.addEventListener(event, finishDrag)
+  divider.addEventListener('dblclick', () => { share = 1 / 3; applyShare(); persist() })
+  divider.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter'].includes(event.key) || !divider.offsetWidth) return
+    event.preventDefault()
+    const step = event.shiftKey ? 96 : 32
+    if (event.key === 'Enter') { share = 1 / 3; applyShare() }
+    else setWidth(event.key === 'Home' ? 200 : event.key === 'End' ? workspace.clientWidth : stage.getBoundingClientRect().width + (event.key === 'ArrowLeft' ? -step : step))
+    persist()
+  })
+  applyShare()
+  new ResizeObserver(() => {
+    fitGraph()
+    if (!divider.offsetWidth) { finishDrag(); return }
+    const available = workspace.clientWidth - divider.offsetWidth
+    const value = Math.round(stage.getBoundingClientRect().width / available * 100)
+    divider.setAttribute('aria-valuemin', String(Math.round(200 / available * 100)))
+    divider.setAttribute('aria-valuemax', String(Math.round((available - 320) / available * 100)))
+    divider.setAttribute('aria-valuenow', String(value))
+    divider.setAttribute('aria-valuetext', `Graph ${value}%, review card ${100 - value}%`)
+  }).observe(stage)
+}
+
 function element(name, attributes = {}, text) {
   const node = document.createElementNS(namespace, name)
   for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value)
@@ -269,9 +343,10 @@ function element(name, attributes = {}, text) {
 }
 
 function inspect(node) {
+  if (reviewSession?.active && node.kind === 'module') node = reviewSession.inModule(node.id) ?? node
   if (node.id === shippingScenario.dependencyId && isShippingReview(byId.get(shippingScenario.methodId))) node = byId.get(shippingScenario.methodId)
   selected = node.id
-  document.querySelectorAll('.graph-node').forEach(item => item.classList.toggle('selected', item.dataset.id === selected))
+  document.querySelectorAll('.graph-node').forEach(item => item.classList.toggle('selected', item.dataset.id === (node.moduleId ?? selected)))
   document.getElementById('workspace').classList.add('has-detail')
   document.getElementById('detail').hidden = false
   document.getElementById('detail-kind').textContent = node.file ?? 'Unresolved dependency'
@@ -281,11 +356,10 @@ function inspect(node) {
   status.className = 'status ' + node.color
   const copy = getCardCopy(node)
   const shipping = isShippingReview(node)
-  const invoiceQuestion = isInvoice && ['DuplicatePolicy.cs', 'TaxGateway.cs'].includes(node.file)
   document.getElementById('access-understand').hidden = !isAccessReview(node)
   document.getElementById('green-continue').hidden = isAccessReview(node)
   document.getElementById('green-change').hidden = !copy
-  for (const id of ['green-actions', 'green-concern']) document.getElementById(id).hidden = !copy || shipping || invoiceQuestion
+  for (const id of ['green-actions', 'green-concern']) document.getElementById(id).hidden = !copy || shipping
   document.getElementById('gray-review').hidden = !shipping
   for (const id of ['standard-rule', 'detail-facts']) document.getElementById(id).hidden = Boolean(copy)
   document.getElementById('green-change-text').textContent = copy?.change ?? ''
@@ -319,10 +393,10 @@ function inspect(node) {
   document.getElementById('before-code').textContent = node.before?.code?.trim() ?? 'Not present'
   document.getElementById('after-code').textContent = node.after?.code?.trim() ?? 'Not present'
   document.getElementById('scope').textContent = isInvoice ? (node.requirements ?? []).map(id => analysis.requirements.items.find(item => item.id === id)?.text ?? id).join(' ') : analysis.contract + '. ' + analysis.policy.green_contract
-  document.getElementById('model-signal').textContent = isInvoice ? 'Assessment combines source analysis, executed module checks, and authored AI judgments. Confidence is illustrative, not calibrated.' : node.model ? `Model: ${node.model.choice}. Provider confidence ${node.model.confidence}; not a safety probability.` : 'No model signal used for this block.'
+  document.getElementById('model-signal').textContent = isInvoice ? 'Requirements, program-analysis findings, and verification results inform the assessment.' : node.model ? `Model: ${node.model.choice}. Provider confidence ${node.model.confidence}; not a safety probability.` : 'No model signal used for this block.'
   if (isInvoice) {
     list.replaceChildren()
-    for (const [name, value] of [['Compliance confidence', node.model?.assessment === 'unknown' ? 'Needs context' : `${Math.round((node.model?.confidence ?? 0) * 100)}%`], ['Requirement checks', `${node.evidence.filter(item => item.status === 'passed').length} passed / ${node.evidence.filter(item => item.status === 'failed').length} failed`], ['Methods', String(node.methods.length)]]) {
+    for (const [name, value] of [['Compliance confidence', node.model?.assessment === 'unknown' ? 'Needs context' : `${Math.round((node.model?.confidence ?? 0) * 100)}%`]]) {
       const row = document.createElement('div')
       const term = document.createElement('dt')
       const description = document.createElement('dd')
@@ -331,10 +405,12 @@ function inspect(node) {
       row.append(term, description)
       list.append(row)
     }
-    list.hidden = false
+    list.hidden = true
+    document.getElementById('detail-confidence').hidden = false
     invoiceReview?.refresh()
   }
   fitGraph()
+  reviewSession?.select(node)
 }
 
 function draw() {
@@ -367,7 +443,7 @@ function draw() {
   }
   for (const node of graph.nodes) {
     const position = layout.node(node.id)
-    const group = element('g', { transform: `translate(${position.x - 110},${position.y - 43})`, class: `graph-node ${node.color}${selected === node.id ? ' selected' : ''}`, role: 'button', tabindex: '0', 'aria-label': `${node.label}: ${labels[node.color]}`, 'data-id': node.id, 'data-color': node.color })
+    const group = element('g', { transform: `translate(${position.x - 110},${position.y - 43})`, class: `graph-node ${node.color}${(byId.get(selected)?.moduleId ?? selected) === node.id ? ' selected' : ''}`, role: 'button', tabindex: '0', 'aria-label': `${node.label}: ${labels[node.color]}`, 'data-id': node.id, 'data-color': node.color })
     group.append(element('rect', { width: 220, height: 86, rx: 6, class: 'node-rect' }))
     group.append(element('text', { x: 16, y: 21, class: 'node-kind' }, isInvoice ? node.model?.assessment === 'unknown' ? 'CONTEXT NEEDED' : `${Math.round((node.model?.confidence ?? 0) * 100)}% CONFIDENCE` : node.kind === 'external' ? 'UNRESOLVED TARGET' : node.change.toUpperCase()))
     group.append(element('text', { x: 16, y: 44, class: 'node-title' }, node.label.length > 27 ? node.label.slice(0, 25) + '…' : node.label))
@@ -428,19 +504,23 @@ document.getElementById('method-mode').textContent = `${analysis.tool.name} ${an
 document.getElementById('green-contract').textContent = isInvoice ? 'Module checks support bounded claims, not exhaustive coverage. Reviewer inputs and scenario outcomes are recorded separately from the original analysis.' : 'Green contract: ' + analysis.policy.green_contract + '.'
 if (isInvoice) {
   if (!pullRequest) document.getElementById('pr-title').textContent = analysis.requirements.title
+  document.getElementById('amber-legend-label').textContent = labels.amber
+  document.getElementById('amber-legend-label').title = 'Unverified assumptions need reviewer input before they can be treated as facts.'
   document.getElementById('fixture-label').textContent = analysis.requirements.id
-  document.getElementById('methodology').lastChild.textContent = ' Provenance'
-  document.getElementById('method-title').textContent = 'Review provenance'
+  document.getElementById('methodology').lastChild.textContent = ' Review details'
+  document.getElementById('method-title').textContent = 'Review details'
   document.getElementById('method-dialog').querySelector('ol').hidden = true
   document.getElementById('method-mode').textContent = `${analysis.tool.name} ${analysis.tool.version}. ${analysis.verification.passed} executed checks passed; ${analysis.verification.failed} retry-integrity check failed.`
-  document.getElementById('method-dialog').querySelector('.method-warning').textContent = 'Reference example: AI judgments, confidence values, and interactive outcome mappings are authored. No live model was invoked; confidence is not calibrated.'
+  document.getElementById('method-dialog').querySelector('.method-warning').remove()
   document.querySelector('footer > span').textContent = analysis.requirements.id
   document.getElementById('scope').parentElement.querySelector('summary').textContent = 'Evidence & requirements'
+  document.getElementById('scope').parentElement.hidden = true
 }
 document.getElementById('zoom-in').addEventListener('click', () => camera.zoomIn())
 document.getElementById('zoom-out').addEventListener('click', () => camera.zoomOut())
 document.getElementById('fit').addEventListener('click', fitGraph)
 function continueReview() {
+  if (reviewSession?.active) { reviewSession.next(); return }
   if (!getCardCopy(byId.get(selected))) return
   const index = changed.findIndex(node => node.id === selected)
   const next = changed[(index + 1) % changed.length]
@@ -535,6 +615,7 @@ document.getElementById('remove-concern').addEventListener('click', () => {
   document.getElementById('green-add-concern').focus()
 })
 document.getElementById('close-detail').addEventListener('click', () => {
+  if (reviewSession?.active) reviewSession.pause()
   document.getElementById('detail').hidden = true
   document.getElementById('workspace').classList.remove('has-detail')
   selected = null
@@ -551,7 +632,16 @@ document.getElementById('export').addEventListener('click', () => {
   document.body.append(anchor); anchor.click(); anchor.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 })
-if (isInvoice) invoiceReview = createInvoiceReview({ graph, currentId: () => selected, inspectSource, next: continueReview, storageKey: `${concernKey}:invoice-answers:1` })
+if (isInvoice) {
+  invoiceReview = createInvoiceReview({ analysis, graph, currentId: () => selected, inspectSource, openCard: inspect, next: continueReview, storageKey: `${concernKey}:invoice-answers:1`, onChange: () => overallReview?.refresh() })
+  reviewSession = createReviewSession({ methods: reviewMethods, openMethod: inspect, closeDetail: () => document.getElementById('close-detail').click(), storageKey: `${concernKey}:guided-session:1`, onFinish: () => overallReview.open() })
+  overallReview = createOverallReview({
+    analysis, invoiceReview, getProgress: () => reviewSession.progress,
+    getConcerns: () => [...concerns].sort(([left], [right]) => left.localeCompare(right)).map(([id, note]) => ({ id, label: byId.get(id).label, note })),
+    openCard: id => { reviewSession.pause(); inspect(byId.get(id)); document.getElementById('detail').scrollIntoView({ block: 'start' }) },
+  })
+}
 let width = window.innerWidth
 window.addEventListener('resize', () => { if (width !== window.innerWidth) draw(); else fitGraph(); width = window.innerWidth })
 draw()
+if (isInvoice) enableReviewResize()

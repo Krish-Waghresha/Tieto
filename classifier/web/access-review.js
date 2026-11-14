@@ -1,7 +1,9 @@
 import defaultScenario from '../fixtures/order-flow/access-review.json'
+import { createScenarioPlayback } from './scenario-playback.js'
 
-export function createAccessReview({ storageKey, revision, scenario = defaultScenario }) {
+export function createAccessReview({ storageKey, revision, scenario = defaultScenario, source, inspectSource }) {
   const dialog = document.getElementById('understand-dialog')
+  if (scenario.kind === 'retry') return createScenarioPlayback({ dialog, scenario, source, inspectSource })
   const activeInput = document.getElementById('scenario-active')
   const tenantInput = document.getElementById('scenario-tenant')
   const audio = document.getElementById('access-audio')
@@ -9,24 +11,6 @@ export function createAccessReview({ storageKey, revision, scenario = defaultSce
   const noteStatus = document.getElementById('access-note-status')
   let savedNote = null
   let quizAnswer = null
-  if (scenario.kind === 'retry') {
-    document.getElementById('understand-title').textContent = scenario.title
-    document.querySelector('.understand-provenance').textContent = 'INV-105 / Lost acknowledgement'
-    document.getElementById('scenario-active-label').textContent = 'Commit acknowledged'
-    document.getElementById('scenario-tenant-label').textContent = 'Reuse ID (proposed fix)'
-    activeInput.checked = false
-    tenantInput.checked = false
-    document.getElementById('before-flow-title').textContent = 'First attempt'
-    document.getElementById('after-flow-title').textContent = 'Next attempt'
-    document.querySelector('#before-flow-title + code').textContent = 'COMMIT'
-    document.querySelector('#after-flow-title + code').textContent = 'RETRY'
-    for (const version of ['before', 'after']) {
-      document.getElementById(`${version}-active`).previousElementSibling.textContent = 'Invoice ID'
-      document.getElementById(`${version}-tenant`).previousElementSibling.textContent = 'Persistence'
-    }
-    document.getElementById('expected-requirement').textContent = 'INV-105 expected: '
-    document.querySelector('.access-limit').hidden = true
-  }
   try {
     const stored = JSON.parse(localStorage.getItem(storageKey) ?? 'null')
     if (stored?.version === scenario.version && typeof stored.reviewer === 'string' && stored.reviewer.length <= 100 &&
@@ -118,22 +102,6 @@ export function createAccessReview({ storageKey, revision, scenario = defaultSce
   function renderScenario() {
     const active = activeInput.checked
     const matches = tenantInput.checked
-    if (scenario.kind === 'retry') {
-      const duplicated = !active && !matches
-      document.getElementById('before-active').textContent = 'A'
-      document.getElementById('before-tenant').textContent = 'Committed'
-      document.getElementById('before-outcome').textContent = '1 invoice'
-      document.getElementById('after-active').textContent = active ? 'No retry' : matches ? 'A' : 'B'
-      document.getElementById('after-tenant').textContent = active ? 'Not needed' : matches ? 'Same record' : 'New record'
-      document.getElementById('after-tenant-step').classList.toggle('skipped', active)
-      document.getElementById('after-outcome').textContent = duplicated ? '2 invoices' : '1 invoice'
-      document.getElementById('after-outcome').classList.toggle('unexpected', duplicated)
-      document.getElementById('expected-outcome').textContent = '1 invoice'
-      document.getElementById('scenario-verdict').textContent = duplicated ? 'Duplicate invoice created' : matches ? 'Proposed repair avoids this duplicate' : 'No retry is needed'
-      document.getElementById('scenario-result').classList.toggle('mismatch', duplicated)
-      document.getElementById('scenario-consequence').textContent = duplicated ? 'The commit succeeded. Retrying with a new ID saves the invoice a second time.' : matches ? 'A stable identity lets the store recognize the already-committed invoice.' : 'The acknowledgement ends the retry loop after the first write.'
-      return
-    }
     const before = active && matches
     const after = active || matches
     for (const [version, allowed, tenantReached] of [['before', before, active], ['after', after, !active]]) {
@@ -154,7 +122,7 @@ export function createAccessReview({ storageKey, revision, scenario = defaultSce
   activeInput.addEventListener('change', renderScenario)
   tenantInput.addEventListener('change', renderScenario)
   document.getElementById('reset-scenario').addEventListener('click', () => {
-    activeInput.checked = scenario.kind !== 'retry'
+    activeInput.checked = true
     tenantInput.checked = false
     renderScenario()
   })

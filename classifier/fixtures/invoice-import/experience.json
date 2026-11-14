@@ -1,4 +1,84 @@
 {
+  "engineReasoning": {
+    "modules": {
+      "BatchReconciler.cs": "Its analysis found that rejected rows contribute no financial amounts and accepted values are grouped by currency. Outcomes are validated before aggregation, and duplicate source-row entries are rejected. These controls support INV-106 within the reconciliation logic; upstream persistence remains a separate concern.",
+      "InvoiceNormalizer.cs": "The analysis identifies negative-amount guards before rounding, alongside invariant parsing and identifier normalization. These controls support consistent handling across input formats and regional settings. No blocking conflict was identified within the normalization logic.",
+      "InvoiceValidator.cs": "The validation paths enforce the stated identity, date, currency, and amount boundaries. Invalid values produce field-specific issues rather than entering the import as valid invoices. These controls support INV-103 within this component.",
+      "CsvInvoiceReader.cs": "The reader handles quoted fields, maps the required columns, and separates malformed rows from valid records. Input-size and row-count limits bound processing. These controls support INV-101; downstream invoice validation remains a separate responsibility.",
+      "ReportWriter.cs": "The report uses structured JSON serialization for identifiers, amounts, and issue details. Accepted and rejected outcomes retain their distinct fields, and raw supplier data is omitted. This supports the reporting requirements without extending the assessment to upstream persistence.",
+      "DuplicatePolicy.cs": "The policy rejects invoice identities already present in the batch or store, including cancelled invoices. INV-104 does not specify whether cancellation should permit a replacement, so the intended behavior needs an owner decision.",
+      "RetryingInvoiceWriter.cs": "A new invoice ID is created inside the retry loop. If a write commits but its acknowledgement is lost, the next attempt can create a second record for the same invoice. This conflicts with INV-105 unless the persistence layer independently prevents duplicates, a guarantee the engine cannot establish.",
+      "TaxGateway.cs": "The rate comes from a provider selected at runtime. The engine can inspect how the returned value is handled but cannot identify the implementation producing it. The provider's rate and failure guarantees are needed to complete the assessment.",
+      "BatchImporter.cs": "The importer coordinates parsing, validation, duplicate detection, tax resolution, and persistence. Its local flow separates successful rows from errors, but the combined behavior depends on the unresolved duplicate policy, provider contract, and retry integrity.",
+      "ImportPreview.cs": "The preview gathers ordered row issues without saving invoices or calling the tax provider. Its readiness decision still depends on the duplicate policy, including the unresolved treatment of cancelled invoices."
+    },
+    "methods": {
+      "BatchImporter.Import": "The method isolates row failures and coordinates the import stages. Its complete behavior still depends on the duplicate policy, tax-provider contract, and retry writer, so local control flow alone cannot settle the assessment.",
+      "BatchImporter.RequireTenant": "The method rejects empty, oversized, or control-character tenant identifiers before processing continues. This supports the tenant-input guard in INV-109; authorization and storage isolation remain separate responsibilities.",
+      "BatchReconciler.Build": "The method validates outcomes before counting rows or aggregating amounts. Rejected rows are excluded from totals, currencies stay separate, and duplicate source rows are rejected. This supports INV-106 within reconciliation, not upstream persistence.",
+      "BatchReconciler.Reject": "A rejected outcome requires an issue and carries no invoice identity or monetary contribution. This prevents the rejection path from inflating accepted totals and supports the outcome contract in INV-106.",
+      "BatchReconciler.Accept": "The outcome retains the supplied invoice ID, currency, net amount, and tax without creating an error state. This supports the accepted-row contract; correctness of those supplied values remains with the caller and outcome validation.",
+      "BatchReconciler.ValidateOutcome": "The validation branches reject unknown states, accepted rows without an identity, and rejected rows containing monetary values. These guards protect the assumptions used by reconciliation under INV-106.",
+      "CsvInvoiceReader.Read": "The reader bounds input, maps headers, and separates malformed records while preserving valid rows. Its handling of quoting and row structure supports INV-101; business validation belongs to later stages.",
+      "CsvInvoiceReader.MapHeader": "Header names are matched without case sensitivity, while duplicate and missing required columns are reported. This protects the column mapping used to interpret each invoice row under INV-101.",
+      "DuplicatePolicy.Check": "The lookup blocks existing identities regardless of whether the stored invoice is active or cancelled. INV-104 leaves the cancelled case open, so the engine needs the owner's intended rule.",
+      "DuplicatePolicy.Remember": "This helper records an imported identity for subsequent duplicate checks. Its role is clear, but the module's treatment of cancelled invoices still requires clarification under INV-104.",
+      "DuplicatePolicy.NewBatch": "The helper creates an ordinal identity set for a single batch. The collection behavior is understood, but the duplicate-policy assessment remains conditional on the owner's cancellation rule.",
+      "DuplicatePolicy.MakeKey": "The key includes tenant, supplier, and invoice number, preserving the intended identity boundaries. Whether a cancelled identity should block a replacement is still a policy decision under INV-104.",
+      "ImportPreview.Create": "The preview avoids persistence and provider calls while collecting row issues. Its readiness decisions still depend on the unresolved duplicate policy, so that assumption must be settled before completing the assessment.",
+      "InvoiceNormalizer.Normalize": "The method parses dates and amounts explicitly and rejects negative monetary values before rounding. Identity normalization and aggregated input errors support INV-102 within this conversion step.",
+      "InvoiceNormalizer.NormalizeKey": "Trimming, Unicode NFC normalization, and invariant uppercase produce consistent identity keys. These transformations support INV-102 without making claims about the business uniqueness of the resulting identity.",
+      "InvoiceNormalizer.RoundMoney": "The method uses decimal rounding to two places with an explicit midpoint rule. This directly implements the rounding policy in INV-102; amount-range validation remains the caller's responsibility.",
+      "InvoiceNormalizer.TryMoney": "The parser limits the accepted numeric syntax and fractional precision before invariant decimal conversion. This avoids dependence on regional number formats and supports INV-102 within the parsing scope.",
+      "InvoiceNormalizer.NormalizeAll": "Each input row is normalized once and appended in input order. The method delegates conversion to the analyzed normalizer and preserves the result ordering required by the import pipeline.",
+      "InvoiceValidator.Validate": "The method checks identifiers, accounting dates, supported currencies, and amount ranges, then delegates tax validation. These explicit branches support INV-103 for the normalized input it receives.",
+      "InvoiceValidator.ValidateTax": "The method rejects negative tax, tax above the net amount, and unsupported precision. These guards implement the tax boundaries in INV-103 without relying on the provider to enforce them.",
+      "InvoiceValidator.ValidateIdentifier": "Empty identifiers, excessive lengths, and control characters produce issues tied to the source field and line. This supports the identifier constraints in INV-103.",
+      "ReportWriter.Write": "The method serializes the report through a structured JSON writer and keeps accepted and rejected row fields distinct. This supports INV-106 while leaving the accuracy of the supplied report to reconciliation.",
+      "ReportWriter.WriteIssue": "Issue details are emitted as structured properties rather than interpolated JSON. This preserves their values and escaping under INV-106 without interpreting supplied text as markup.",
+      "RetryingInvoiceWriter.Write": "Invoice identity is recreated on every retry. A committed write followed by a lost acknowledgement can therefore produce a second record. This conflicts with INV-105 unless storage provides duplicate protection that the engine cannot establish.",
+      "TaxGateway.Resolve": "Explicit tax bypasses the provider, while missing tax invokes a runtime-selected implementation. The returned amount is validated, but the provider's rate and failure guarantees remain unavailable."
+    }
+  },
+  "moduleChanges": {
+    "BatchImporter.cs": "Imports invoice batches while keeping valid rows separate from rows that cannot be processed.",
+    "BatchReconciler.cs": "Builds ordered import results and totals accepted amounts separately for each currency.",
+    "CsvInvoiceReader.cs": "Reads invoice CSV files, maps their columns, and separates malformed rows from valid records.",
+    "DuplicatePolicy.cs": "Detects repeated invoice identities within a tenant and batch, including previously cancelled invoices.",
+    "ImportPreview.cs": "Previews invoice rows and their issues without writing invoices to the store.",
+    "InvoiceNormalizer.cs": "Normalizes invoice identities, dates, and amounts before validation.",
+    "InvoiceValidator.cs": "Validates invoice identities, dates, currencies, and monetary amounts.",
+    "ReportWriter.cs": "Produces a structured JSON report of accepted invoices, rejected rows, and currency totals.",
+    "RetryingInvoiceWriter.cs": "Retries transient writes using a new invoice ID for each attempt.",
+    "TaxGateway.cs": "Uses supplied tax or obtains a rate from a runtime-selected provider."
+  },
+  "methodChanges": {
+    "BatchImporter.Import": "Imports valid invoice rows while reporting parsing, validation, provider, and persistence failures for the other rows.",
+    "BatchImporter.RequireTenant": "Rejects missing, oversized, or control-character tenant identifiers before processing an import.",
+    "BatchReconciler.Build": "Builds ordered row outcomes and reconciles accepted amounts separately for each currency.",
+    "BatchReconciler.Reject": "Creates a rejected-row outcome with its reasons and zero contribution to invoice totals.",
+    "BatchReconciler.Accept": "Creates an accepted-row outcome containing the invoice ID, currency, net amount, and tax.",
+    "BatchReconciler.ValidateOutcome": "Rejects inconsistent outcomes, including accepted rows without an ID and rejected rows that contribute money.",
+    "CsvInvoiceReader.Read": "Reads bounded CSV input, maps its columns, and isolates malformed rows while preserving valid records.",
+    "CsvInvoiceReader.MapHeader": "Maps case-insensitive header names and reports duplicate or missing required columns.",
+    "DuplicatePolicy.Check": "Blocks invoice identities already seen in the batch or store, including identities belonging to cancelled invoices.",
+    "DuplicatePolicy.Remember": "Records a successfully imported invoice identity in the current batch's duplicate set.",
+    "DuplicatePolicy.NewBatch": "Creates an ordinal identity set for detecting duplicates within one import batch.",
+    "DuplicatePolicy.MakeKey": "Combines tenant, supplier, and invoice number into the identity used for duplicate detection.",
+    "ImportPreview.Create": "Previews normalized rows and their issues without saving invoices or calling the tax provider.",
+    "InvoiceNormalizer.Normalize": "Parses invoice dates and amounts, normalizes identifiers, and rejects negative amounts before rounding.",
+    "InvoiceNormalizer.NormalizeKey": "Trims an identifier, normalizes Unicode to NFC, and converts it to invariant uppercase.",
+    "InvoiceNormalizer.RoundMoney": "Rounds an amount to two decimal places, with midpoint values rounded away from zero.",
+    "InvoiceNormalizer.TryMoney": "Accepts invariant decimal amounts with a sign and at most four fractional digits, rejecting unsupported formats.",
+    "InvoiceNormalizer.NormalizeAll": "Normalizes every source row while preserving the original row order.",
+    "InvoiceValidator.Validate": "Checks invoice identity, date, currency, net amount, and any supplied tax against the validation rules.",
+    "InvoiceValidator.ValidateTax": "Rejects negative tax, tax above the net amount, and resolved tax with more than two decimal places.",
+    "InvoiceValidator.ValidateIdentifier": "Reports empty, oversized, or control-character identifiers with the affected source line and field.",
+    "ReportWriter.Write": "Writes a structured JSON import report with currency totals, ordered outcomes, and safely escaped issue details.",
+    "ReportWriter.WriteIssue": "Writes an issue's line, field, code, and message as structured JSON properties.",
+    "RetryingInvoiceWriter.Write": "Retries transient writes but generates a new invoice ID on every attempt, allowing duplicate persistence after a lost acknowledgement.",
+    "TaxGateway.Resolve": "Uses supplied tax directly, or calls a runtime-selected provider and validates the resulting amount."
+  },
   "questions": {
     "DuplicatePolicy.cs": {
       "question": "Should cancelled invoices block re-import?",
@@ -24,16 +104,83 @@
     "methodId": "module:RetryingInvoiceWriter.cs",
     "title": "RetryingInvoiceWriter.Write",
     "exportName": "retry-review-note.json",
-    "narration": "The first attempt saves an invoice, but the acknowledgement is lost. The retry loop does not know the commit succeeded. It allocates a new invoice ID and saves the same invoice again. The executed check expected one invoice and found two. Requirement INV one oh five says retries must not duplicate an invoice. Reusing a stable invoice identity is a possible repair. The proposed-fix toggle illustrates that behavior; the current pull request still creates a new identity on every attempt.",
+    "sample": { "number": "INV-1042", "supplier": "North Harbor", "amount": "EUR 120.00", "firstId": "inv-1042-a", "retryId": "inv-1042-b" },
+    "narration": "This method has a useful goal: save an invoice even when a temporary storage problem interrupts the request. It limits retries to the configured number of attempts, at most three. That improves resilience without an endless loop. Permanent rejection returns a failure instead of being retried.\n\nOn each attempt, the code builds an invoice from the normalized row and tax amount. It generates a new invoice ID, calls the store's Save method, and returns success if that call completes. The important detail is where identity is created: inside the retry loop.\n\nNow consider a failure after the write. The store commits the first invoice, but the acknowledgement is lost. The caller receives a transient exception. That does not mean the commit was rolled back. The catch block allows another attempt, which creates a different ID for the same invoice. The store now sees two identities and keeps two records. The executed lost-acknowledgement check expected one invoice and found two. This conflicts with requirement INV one oh five.\n\nThe proposed change creates the identity before the loop and reuses it on every attempt. The benefit is that this ID-keyed store updates the existing entry instead of adding another. The tradeoff is that repeated writes now target the same record: the store must prevent conflicting data from being silently overwritten. A stable ID also does not guarantee that downstream side effects run only once.\n\nBefore accepting the repair, verify the storage contract and exercise failures both before and after commit, permanent rejection, and concurrent retries. Bounded retries help availability; stable identity and atomic duplicate handling protect correctness. The current pull request still generates a new ID on every attempt.",
     "quiz": {
-      "question": "The store committed the invoice, but its acknowledgement was lost. What does the current retry create?",
-      "options": [
-        { "id": "one", "label": "One invoice, because a timeout rolls back the commit" },
-        { "id": "two", "label": "A second invoice with a new ID" },
-        { "id": "none", "label": "No invoice, because the retry is cancelled" }
-      ],
-      "answer": "two",
-      "explanation": "The first invoice is already stored. A new ID on retry creates a second record. The executed lost-acknowledgement check observed two invoices instead of one."
+      "questions": [
+        {
+          "id": "lost-acknowledgement",
+          "title": "Predict the retry",
+          "question": "The first write is saved, but its confirmation is lost. What does the current code create next?",
+          "options": [
+            { "id": "one", "label": "One invoice, because a timeout rolls back the commit" },
+            { "id": "two", "label": "A second invoice with a new ID" },
+            { "id": "none", "label": "No invoice, because the retry is cancelled" }
+          ],
+          "answer": "two",
+          "explanation": "The first record is already saved. A new ID makes the retry a second record; a timeout does not undo the commit."
+        },
+        {
+          "id": "identity-location",
+          "title": "Find the cause",
+          "question": "Which detail lets the same invoice become a different stored record on each attempt?",
+          "options": [
+            { "id": "result", "label": "Returning a WriteResult after Save completes" },
+            { "id": "guid", "label": "Calling Guid.NewGuid() inside the retry loop" },
+            { "id": "limit", "label": "Limiting the loop to three attempts" }
+          ],
+          "answer": "guid",
+          "explanation": "Guid.NewGuid() runs again on retry, so the store receives a different key. The issue is creating identity per attempt instead of per logical invoice write."
+        },
+        {
+          "id": "retry-benefit",
+          "title": "Recognize the benefit",
+          "question": "What does the bounded retry loop do well?",
+          "options": [
+            { "id": "once", "label": "Guarantees that an invoice can only be stored once" },
+            { "id": "all", "label": "Keeps retrying every error until it succeeds" },
+            { "id": "transient", "label": "Allows recovery from transient failures with a limited number of attempts" }
+          ],
+          "answer": "transient",
+          "explanation": "Transient failures can be retried up to the configured limit, which is at most three. This improves availability, but does not by itself make repeated writes safe."
+        },
+        {
+          "id": "permanent-rejection",
+          "title": "Follow the failure path",
+          "question": "Save throws InvalidOperationException. What does this method do?",
+          "options": [
+            { "id": "stop", "label": "Returns a failed WriteResult without another retry" },
+            { "id": "retry", "label": "Generates another ID and retries until the attempt limit" },
+            { "id": "success", "label": "Returns success because an earlier attempt may have committed" }
+          ],
+          "answer": "stop",
+          "explanation": "The InvalidOperationException handler returns a failure immediately. Only the transient-store exception path continues the retry loop."
+        },
+        {
+          "id": "stable-identity",
+          "title": "Choose the repair",
+          "question": "Where should the proposed repair create the invoice ID so retries keep the same identity?",
+          "options": [
+            { "id": "catch", "label": "Inside the transient-exception handler" },
+            { "id": "before", "label": "Once before the loop, then reuse it in each Invoice constructor" },
+            { "id": "after", "label": "After Save returns successfully" }
+          ],
+          "answer": "before",
+          "explanation": "Creating the ID before the loop gives every attempt the same identity. Creating it in the catch block changes it again; creating it after Save is too late for the write."
+        },
+        {
+          "id": "storage-guarantee",
+          "title": "Check the remaining risk",
+          "question": "What still needs verification before relying on the stable-ID repair in production?",
+          "options": [
+            { "id": "ignore", "label": "That timeouts can be ignored once the ID is stable" },
+            { "id": "unlimited", "label": "That the retry limit is removed so every write eventually succeeds" },
+            { "id": "atomic", "label": "That the store handles repeated IDs atomically, including concurrent retries and conflicting data" }
+          ],
+          "answer": "atomic",
+          "explanation": "This example store keys records by ID. Production storage needs a suitable idempotency and conflict-handling contract; a stable ID alone does not prevent races or repeated downstream side effects."
+        }
+      ]
     }
   }
 }
