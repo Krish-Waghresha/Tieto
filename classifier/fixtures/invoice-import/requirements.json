@@ -1,0 +1,15 @@
+{
+  "id": "INV-BULK-26",
+  "title": "Bulk invoice import with validation, retries, and reconciliation",
+  "items": [
+    { "id": "INV-101", "text": "Read comma-separated invoices with quoted fields and invariant header names. Isolate malformed rows. Require supplier, number, date, currency, net, and tax columns. Bound input to one million characters and ten thousand records; refuse files exceeding those limits." },
+    { "id": "INV-102", "text": "Normalize supplier and invoice identity with trimming, Unicode NFC, and invariant uppercase. Parse ISO dates and invariant decimal amounts with at most four fractional digits. Reject negative net/tax before rounding. Round monetary values to two decimals away from zero; blank tax remains unresolved, not zero." },
+    { "id": "INV-103", "text": "Reject missing, oversized, or control-character identities; unsupported currencies; dates before 2000 or after the supplied accounting date; net outside zero to one million; and tax outside zero to net. Supported currencies are EUR, USD, GBP." },
+    { "id": "INV-104", "text": "Prevent duplicate active invoices within the current tenant and batch, keyed by normalized supplier and invoice number. Whether a cancelled invoice blocks re-import requires a business-owner decision.", "openQuestion": "Should cancelled invoices block re-import, or may a replacement be created?" },
+    { "id": "INV-105", "text": "Retry transient persistence failures at most three times, never retry permanent rejection, and never persist the same invoice twice if a commit acknowledgement is lost." },
+    { "id": "INV-106", "text": "Return one ordered outcome per consumed row. Accepted plus rejected equals total rows. Only accepted rows contribute totals, separated by currency. Emit structured JSON with stable fields, safe escaping, and no raw CSV or supplier identity in row outcomes." },
+    { "id": "INV-107", "text": "Use explicit tax without calling a provider. When tax is absent, require the provider's contract and an identified implementation before relying on its rate. A controlled stub is not evidence about the production provider.", "openQuestion": "Which implementation and rate/failure contract apply to the tax provider?" },
+    { "id": "INV-108", "text": "Offer a dry-run preview with ordered row issues and ready/attention counts. Preview must not persist invoices or call the external tax provider." },
+    { "id": "INV-109", "text": "Import valid rows even when other rows fail. Enforce tenant boundaries, reject invalid files before writes, honor cancellation before processing, and report persistence/provider failures without counting failed rows as accepted." }
+  ]
+}

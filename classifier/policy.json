@@ -1,0 +1,17 @@
+{
+  "version": "attention-v1",
+  "meaning": "Required human attention, not merge authorization or bug probability",
+  "green_contract": "Whitespace-only method edit, stable signature and resolved calls, complete source-only compilation and flow, no directives, caller-source introspection or unscoped file/declaration changes, no risky changed dependency",
+  "model_red_threshold": 0.85,
+  "model_threshold_status": "Prototype threshold, not calibrated on code-review outcomes",
+  "protected_attribute": "ReviewBoundaryAttribute",
+  "rules": {
+    "boundary": "Non-mechanical edits at a base- or head-marked review boundary require human review",
+    "signature": "Changed public signature, addition or removal requires human review",
+    "unknown": "Missing compilation, flow, or call resolution cannot receive lighter review",
+    "whitespace": "Only whitespace trivia changed within the supported compiler contract",
+    "behavior": "Non-mechanical edits need inspection unless a stronger rule applies",
+    "model": "Model risk signals can escalate attention, never clear PA warnings",
+    "dependency": "A green candidate calling a non-green changed method is escalated"
+  }
+}

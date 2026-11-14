@@ -4,3 +4,10 @@ out/
 evidence/
 upstream/
 bot/
+classifier/analyzer/bin/
+classifier/analyzer/obj/
+classifier/fixtures/invoice-import/bin/
+classifier/fixtures/invoice-import/obj/
+classifier/out/
+classifier/node_modules/
+classifier/test-results/

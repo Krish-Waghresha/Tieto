@@ -1,0 +1,39 @@
+{
+  "questions": {
+    "DuplicatePolicy.cs": {
+      "question": "Should cancelled invoices block re-import?",
+      "answers": {
+        "block": { "label": "Yes, block cancelled invoices", "color": "green", "confidence": 0.97, "title": "Policy clarified", "detail": "The existing duplicate policy matches your decision." },
+        "replace": { "label": "No, allow a replacement", "color": "red", "confidence": 0.12, "title": "Policy change needed", "detail": "The current implementation blocks cancelled invoices. It needs to allow the replacement you specified." },
+        "unknown": { "label": "Needs a business-owner decision", "color": "amber", "confidence": 0.72, "title": "Decision remains open", "detail": "The cancelled-invoice policy still needs an owner." }
+      }
+    },
+    "TaxGateway.cs": {
+      "question": "What evidence is available for the tax provider?",
+      "answers": {
+        "contract": { "label": "Approved provider contract", "reference": true, "color": "amber", "confidence": 0.82, "title": "Contract supplied", "detail": "Review the rate and failure behavior against the supplied provider contract." },
+        "missing": { "label": "No provider contract is available", "color": "red", "confidence": 0.15, "title": "Provider needs attention", "detail": "The integration cannot be cleared without knowing the provider's behavior." },
+        "unknown": { "label": "I don't know", "color": "red", "confidence": 0.10, "title": "Find the provider owner", "detail": "Identify the implementation and its contract before relying on the rate." }
+      }
+    }
+  },
+  "retry": {
+    "version": 1,
+    "mode": "illustrative-demo",
+    "kind": "retry",
+    "methodId": "module:RetryingInvoiceWriter.cs",
+    "title": "RetryingInvoiceWriter.Write",
+    "exportName": "retry-review-note.json",
+    "narration": "The first attempt saves an invoice, but the acknowledgement is lost. The retry loop does not know the commit succeeded. It allocates a new invoice ID and saves the same invoice again. The executed check expected one invoice and found two. Requirement INV one oh five says retries must not duplicate an invoice. Reusing a stable invoice identity is a possible repair. The proposed-fix toggle illustrates that behavior; the current pull request still creates a new identity on every attempt.",
+    "quiz": {
+      "question": "The store committed the invoice, but its acknowledgement was lost. What does the current retry create?",
+      "options": [
+        { "id": "one", "label": "One invoice, because a timeout rolls back the commit" },
+        { "id": "two", "label": "A second invoice with a new ID" },
+        { "id": "none", "label": "No invoice, because the retry is cancelled" }
+      ],
+      "answer": "two",
+      "explanation": "The first invoice is already stored. A new ID on retry creates a second record. The executed lost-acknowledgement check observed two invoices instead of one."
+    }
+  }
+}

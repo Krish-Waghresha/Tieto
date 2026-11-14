@@ -1,0 +1,31 @@
+{
+  "name": "attention-classifier-v1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "classify": "python3 engine.py",
+    "classify:hybrid": "python3 engine.py --model gemini",
+    "github:prepare": "python3 github_demo.py",
+    "github:review": "python3 github_review.py",
+    "github:watch": "python3 github_review.py --watch --publish",
+    "playground:serve": "python3 -m http.server 5174 --bind 127.0.0.1 --directory out/playground",
+    "build": "node web/build.mjs",
+    "demo": "npm run classify && npm run build",
+    "demo:invoice": "python3 invoice_demo.py",
+    "test:engine": "python3 -m unittest discover -s . -p 'test_*.py'",
+    "evaluate:synthetic": "python3 evaluate.py --analysis out/analysis.json --labels fixtures/order-flow/oracle.json",
+    "test:browser": "node web/check.mjs",
+    "test:mermaid": "node web/check-mermaid.mjs"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.1.3",
+    "diff": "^9.0.0",
+    "svg-pan-zoom": "^3.6.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@primer/octicons": "^19.42.0",
+    "esbuild": "^0.28.2",
+    "mermaid": "^12.3.0"
+  }
+}
