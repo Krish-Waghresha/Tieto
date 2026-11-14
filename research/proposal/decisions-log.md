@@ -1,0 +1,28 @@
+> **STATUS: RESEARCH PROPOSAL — NOT FINAL.** Working draft from the research/experiment track (Jakub). Not an agreed design or implementation spec; claims marked pending/simulated/proposed are unverified.
+
+# Lessons & decisions log
+
+Fields: date | observation or decision | evidence | rationale | owner | next action.
+**Observed** = actually happened to us. **Anticipated** = failure mode we designed against but have not seen.
+
+| Date | Type | Entry | Evidence | Rationale | Owner | Next |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-14 | Decision | Worked example = `ju26-issue-2283` | research.md §7 | small, precise requirement, upstream PR #2305 to compare, real policy question | team | run P1–P4 |
+| 2026-11-14 | **Observed failure** | Research agent diffed 2283 against wrong base (`524fd55e`) and attributed dependabot Roslyn 4.3→4.12 bump to the AI change | `git log`: `32258fdb` is dependabot 2025-03-01 and base of all 4 branches | a reviewer on the wrong base is confidently wrong → stage [0] PIN | team | keep as demo slide |
+| 2026-11-14 | **Observed failure** | Our own count of "34 call sites" was a text match; real live sites = 30 (29 `?.Invoke` + 1 direct, others commented out) | grep of `9df83c38` TypeCollector.cs | text search ≠ program fact; claims need tool-level grade | team | use 30 everywhere |
+| 2026-11-14 | Observed | Base already handles `ParameterSyntax` at `TypeCollector.cs:926`; agent's new helper ignores it | `git show 32258fdb:…TypeCollector.cs` line 926 | strengthens F1; "ignored in-file precedent" is a reusable check | team | P4 test |
+| 2026-11-14 | Decision | Concept named **Decision-First Review**; one grade set PROVEN/MEASURED/HEURISTIC/ARGUED + ABSTAINED/UNSUPPORTED | judge review: two names, two label sets | clarity is 30% of score | team | align concept-card.md |
+| 2026-11-14 | Decision | "Same agent wrote tests" and "intent unknown" are no longer DEEP triggers | operator review: would push 50–60% of PRs to DEEP | tier inflation destroys routing; replaced by fail-on-base check and a decision card | team | — |
+| 2026-11-14 | Decision | "analyzer/generator" sensitive only for diagnostic/emit-policy changes | judge review | otherwise every PR in this repo is DEEP | team | — |
+| 2026-11-14 | Decision | Added [4] Coverage stage (hunk/CFG reconciliation, scope fan-out, differential behavior, changed expectations) | red team: missed decision is invisible | makes "humans approve decisions" falsifiable | team | demo scope fan-out on 2283 |
+| 2026-11-14 | Decision | PROVEN redefined with stated blind spots; golden diff → MEASURED; "behavior absent" requires IL equality | red team: renames change wire format; directives are trivia | overclaimed proof is the worst failure for a bank auditor | team | — |
+| 2026-11-14 | Decision | Triage uses base-revision policy/analyzer config; config/CI/policy changes force DEEP | red team: agent edits rules that judge it | — | team | — |
+| 2026-11-14 | Decision | AI never counts toward required reviewers; agent's prompter cannot sign; LIGHT 5% random re-review | judge: contradictory statements, no separation of duties | — | team | — |
+| 2026-11-14 | Decision | Recall quiz replaced by DEEP-only "What could break?" free text, scored afterwards; recommendation hidden until reviewer verdict; canaries | red team + operator: quiz answerable by AI, anchoring | measure attention, don't gate on memory | team | — |
+| 2026-11-14 | **Open — team call** | Audio briefing moved off the merge path (weekly per-area digest / onboarding), labeled "not evidence" | judge + operator: nobody listens to 15/day; redundancy principle | user originally proposed podcasts; keep the idea where it helps learning | Jakub | confirm or override |
+| 2026-11-14 | Decision | HTML view kept, but decision cards also posted in the PR; signing server-side | operator: evidence must be at diff time; red team: injected script could pre-tick | — | team | — |
+| 2026-11-14 | Anticipated | Persuasive but wrong explanation; false reassurance from tests; missed dependencies; stale evidence after new commit; PR splitting; tests pinning wrong behavior | red team | mitigations in pipeline.md §3 | team | — |
+| 2026-11-14 | Decision | Routing (LIGHT/STANDARD/DEEP) repositioned as proven practice, not novelty; novelty = decisions + coverage check + graded evidence + signed record feeding per-area trust | wave A: Zalando, Rewind, Intercom, Adyen, Vercel published 3-tier triage in 2026; RTS 6 Art. 11(1) mandates proportionate review | claiming routing as new would be refuted by judges | team | takeaways.md |
+| 2026-11-14 | Decision | Visual/graph layer pitched as comprehension aid, not defect-detection gain | wave A visualization: no controlled study shows diagrams raise defect detection | avoid overclaim | team | — |
+| 2026-11-14 | Decision | Adopt deterministic, unit-tested verdict engine (Rewind), re-run-originating-analyzer check (Uber FixrLeak), disprove-it pass (DoorDash), rules-index validation (G-Research) | waveA-bigtech.md, waveA-trading.md | proven mechanisms reduce our design risk | team | fold into pipeline v0.4 |
+| 2026-11-14 | Decision | Demo cut list: no CFG engine, no GitHub app, no Stryker, no other branches, ≤1 logged LLM call; HTML generated from JSON ledger | feasibility review | 2-person team, prototype not expected | team | build ledger + generator |

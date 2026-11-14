@@ -1,0 +1,334 @@
+
+
+ Jane Street Blog - Scrutinize your code in style 
+
+ Home
+
+ All Posts
+
+ Machine Learning
+
+ Authors Index
+
+ Jane Street
+
+ Subscribe to email updates
+
+Subscribe to Email Updates
+
+ Featured Reads
+
+ Read more
+
+Using ASCII waveforms to test hardware designs
+
+ Read more
+
+Finding memory leaks with Memtrace
+
+ Tags
+
+async
+
+book
+
+c
+
+camlp4
+
+code-review
+
+comments
+
+compiler
+
+core
+
+hackerschool
+
+hg
+
+incremental
+
+internship
+
+interviewing
+
+machine-learning
+
+ocaml
+
+parallel-programming
+
+performance
+
+ppx
+
+real-world-ocaml
+
+registers
+
+speed
+
+ui
+
+ Get the RSS feed
+
+ Jane Street Open Source
+
+ Join Our Team
+
+Scrutinize your code in style
+
+ Jun 13, 2014 | 
+
+ 5 min read
+
+ Share on Facebook
+
+ Share on Twitter
+
+ Share on LinkedIn
+
+By: Yaron Minsky
+
+This is the second in a series of posts about the design of Iron, our new code
+review tool. You can read the first post here.
+Also, I should give credit where credit is due. While I’ve been involved in some
+of the design discussions, the real work has been done by Stephen Weeks,
+Valentin Gatien Baron, Olin Shivers (yes, that Olin Shivers. He’s joining us for
+part of his sabbatical) and Mathieu Barbin.
+
+Jane Street’s code review tools and culture were built around a small subset of
+our systems which we descibe as critical path. These systems have some role in
+the carrying of an order to the market, and we’re pretty paranoid about getting
+things wrong there.
+
+Out of that paranoia, we set up some rules for ourselves. In particular:
+
+Every new feature has an assigned seconder, who is intended to act as a
+kind of co-designer of the feature. A seconder shouldn’t approve a feature
+until he believes in the feature enough to defend it to others.
+
+Individual files also have assigned reviewers. Every file has three assigned
+reviewers. None of these reviewers except the seconder should start
+reviewing until the seconder has finished.
+
+The level of scrutiny is high. Reviewers should read minutely and carefully
+for coding style, clarity and correctness, as well as make sure the changes
+are adequately tested and documented.
+
+This reviewing style is reasonable for our safety-critical systems, but is also
+pretty expensive to maintain. As such, it just doesn’t make sense for every
+piece of code we write.
+
+The way we handled this early on was that we divided the world into two parts:
+the critical path, where we did this high level of review; and everything else,
+where we did no review at all.
+
+Perhaps unsurprisingly, this was a mistake. Code review is valuable even for
+code that is not safety-critical. All too often, unreviewed parts of the tree
+turned into swamps that had to be drained later. But the high-level of scrutiny
+we apply to critical path systems just doesn’t make sense everywhere. The only
+reasonable solution is to apply different standards to different codebases.
+
+As one example, we have a set of tools developed by the trading desks. These are
+largely rough-and-ready tools for aggregating and displaying information to the
+traders. They’re a lot lower risk than the trading systems, and, accordingly,
+the review style we use is quite different. In particular:
+
+Every feature has a seconder. The seconder should look over the feature to
+check for style issues and to check the rough sanity of the change.
+
+File reviewers will be consulted only after the seconder approves, but file
+reviewers are not mandatory, and are pretty rare.
+
+While we have different review styles for different codebases, our existing
+tools didn’t support this explicitly. Everything was left to people remembering
+which standard to apply to which piece of code, often hinging on users
+remembering what they’re supposed to do for different parts of the tree.
+
+Iron was designed from the beginning with the goal of supporting multiple review
+styles within the same repository. These styles are codified in Iron’s
+obligations files, which describe the reviewing styles and define which part
+of the tree is done in which style.
+
+Each style of review is codified as what is called a scrutiny. A scrutiny
+consists of:
+
+A name, which is shown to reviewers when they’re reviewing as a mnemonic.
+
+A description, which is meant to explain the goals the review should keep in
+mind for this review scrutiny.
+
+The number of required reviewers.
+
+A scrutiny level, which is simply an integer that is meant to indicate the
+intensity of the scrutiny.
+
+Iron uses this scrutiny information to notify the reviewer as to the level of
+scrutiny they’re supposed to apply, as well as to make sure that rules about the
+number of reviewers are followed.
+
+Things get more complicated, though, when a file changes from one scrutiny to
+another. Iron of course notifies the user about a change, but importantly, if
+the scrutiny of a file goes up, Iron will ask the reviewers to re-review from
+scratch as well.
+
+Tracking scrutiny properly can be pretty tricky. Consider again the case of Bob
+and Carla, from my previous post. If you remember, Carla get her feature
+released first, while Bob was still getting his feature reviewed. Now, for Bob
+to release, he needs to merge his feature with Carla’s. Here’s a diagram of the
+revisions involved.
+
+ Fb'
+ / \
+ / \
+Fc Fb
+ \ /
+ \ /
+ B
+
+Here, B->Fc is Carla’s feature, B->Fb is Bob’s feature, and Fc->Fb' is the
+rebased version of Bob’s feature.
+
+Now, what if Carla’s feature increased the scrutiny on foo.ml, and Bob’s
+modified foo.ml. That means that in Carla’s feature, foo.ml was reviewed
+from scratch at the higher level of scrutiny, but in Bob’s feature, the changes
+to foo.ml were reviewed at the lower level.
+
+As a result, the two features aren’t safe to release together, since it would
+allow the release of a low-scrutiny change to a high scrutiny piece of code.
+
+Iron gets this case right by requesting that the reviewer reread Fc->Fb' at
+the higher level of scrutiny. This is just one among many tricky corner cases,
+and we’ve handled those in Iron by actually creating a simple logic, inference
+rules and all, which allows us to determine when a given feature should count as
+reviewed.
+
+All of this underlines that when you take code review seriously, things get
+complicated, and you need to really amp up your tools to manage that complexity.
+
+That’s all I wanted to say about scrutiny. In the next post, I expect to cover
+hierarchical features, which are a surprisingly fluid tool for managing complex
+workflows in Iron. But more on that later.
+
+Yaron Minsky joined Jane Street back in 2002, and claims the dubious honor
+of having convinced the firm to start using OCaml.
+
+ previous post
+
+ next post 
+
+Subscribe to Email Updates
+
+Signals & Threads Podcast
+
+Listen to the latest episode
+
+Featured Tech Talk
+
+The Algorithm for Precision Medicine
+
+Jane Street YouTube Channel
+
+Featured Reads
+
+ Read more
+
+Using ASCII waveforms to test hardware designs
+
+ Read more
+
+Finding memory leaks with Memtrace
+
+Tags
+
+async
+
+book
+
+c
+
+camlp4
+
+code-review
+
+comments
+
+compiler
+
+core
+
+hackerschool
+
+hg
+
+incremental
+
+internship
+
+interviewing
+
+machine-learning
+
+ocaml
+
+parallel-programming
+
+performance
+
+ppx
+
+real-world-ocaml
+
+registers
+
+speed
+
+ui
+
+RSS
+
+ Get the RSS feed
+
+Jane Street Open Source
+
+ From committing patches to the Linux kernel to releasing our own projects, we’re always looking for ways to participate in the open source community.
+
+Join Our Team
+
+Where FP meets the real world.
+
+If you're interested in working at a place where functional programming meets the real world, then apply for a job at Jane Street.
+
+Learn more
+
+Who We Are
+
+What We Do
+
+Client Offering
+
+The Latest
+
+Culture
+
+Join Jane Street
+
+Contact Us
+
+Disclosures & Policies
+
+ © Copyright 2015-2026 Jane Street Group, LLC. All rights reserved. Services are provided in the U.S. by Jane Street Capital, LLC and Jane Street Execution Services, LLC, each of which is a SEC-registered broker dealer and member of FINRA (www.finra.org). Regulated activities are undertaken in Europe by Jane Street Financial Limited, an investment firm authorized and regulated by the U.K. Financial Conduct Authority, and Jane Street Netherlands B.V., an investment firm authorized and regulated by the Netherlands Authority for the Financial Markets (Autoriteit Financiële Markten), and in Hong Kong by Jane Street Hong Kong Limited, a regulated entity under the Hong Kong Securities and Futures Commission (CE No. BAL548). Each of these entities is a wholly owned subsidiary of Jane Street Group, LLC. This material is provided for informational purposes only and does not constitute an offer or solicitation for the purchase or sale of any security or other financial instrument. | Jane Street and the concentric circle mark are registered trademarks of Jane Street.
+
+ Privacy
+
+ Cookies
+
+ Jane Street Group, LLC uses cookies and similar technologies, including third-party cookies, on this Site to provide basic functionalities and perform analytics. You may accept or decline cookies by selecting “Accept” or “Reject”. For information regarding our cookie practices, see Jane Street’s
+ Ad and Cookie Policy.
+
+ Accept All
+ Reject All
+

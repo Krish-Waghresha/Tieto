@@ -1,0 +1,2320 @@
+
+
+ Signals and Threads | The Changing Craft of Programming
+
+ All Episodes
+
+Listen in on Jane Street’s Ron Minsky as he has conversations with engineers working on everything from clock synchronization to reliable multicast, build systems to reconfigurable hardware. Get a peek at how Jane Street approaches problems, and how those ideas relate to tech more broadly.
+
+Listen and subscribe:
+
+The Changing Craft of Programming
+
+with John Crepezzi
+
+ Episode 31   |  
+
+ October 16th, 2026
+
+BLURB
+
+John Crepezzi has spent his career building tools for other programmers—at Tumblr, at
+Square, and then at GitHub, where he worked on the merge queue and the early versions of
+Codespaces. He came to Jane Street to build a code search engine for OCaml. A week into
+the job, ChatGPT came out, and he’s been working on AI tooling ever since. In this
+episode, Ron and John talk about how a three-day prototype grew into a firmwide platform
+for agentic coding, how AI can break the social contract around code review, and how to
+build tools that support both agent workflows and human understanding.
+
+SUMMARY
+
+John Crepezzi has spent his career building tools for other programmers—at Tumblr, at
+Square, and then at GitHub, where he worked on the merge queue and the early versions of
+Codespaces. He came to Jane Street to build a code search engine for OCaml. A week into
+the job, ChatGPT came out, and he’s been working on AI tooling ever since. In this
+episode, Ron and John talk about how a three-day prototype grew into a firmwide platform
+for agentic coding, how AI can break the social contract around code review, and how to
+build tools that support both agent workflows and human understanding.
+
+Some links to topics that came up in the discussion:
+
+QBasic
+
+Pirates of Silicon Valley
+
+Hoogle — the Haskell API search engine that inspired the
+original code-search project
+
+GitHub merge
+queue and
+Codespaces
+
+Sorbet — gradual typing for Ruby; Hack —
+Meta’s typed PHP
+
+Active Record
+
+Bubblewrap and
+passt/pasta — sandboxing tools
+
+seccomp BPF
+
+Claude Code and OpenAI Codex
+CLI
+
+Model Context Protocol and Agent
+Skills
+
+Perfetto and
+magic-trace
+
+Antithesis
+
+Bonsai — Jane Street’s OCaml web UI library
+
+Signals & Threads: Language Design with Leo
+White
+
+CONTENTS
+
+00:00:28 – QBasic and an infinite loop
+
+00:04:25 – Tumblr, Square, and GitHub
+
+00:06:41 – Building for thousands instead of millions
+
+00:10:43 – From Ruby to OCaml
+
+00:18:05 – Active Record, Petrol, and metaprogramming
+
+00:22:14 – Three days to build JaneGPT
+
+00:29:27 – Writing evals, and grading models with models
+
+00:33:48 – Giving LLMs their own permissions
+
+00:36:29 – Adversarial models and reward hacking
+
+00:41:00 – Deny lists, allow lists, and bwrap
+
+00:48:09 – AI users
+
+00:53:09 – Tool calling and the birth of the AIDE CLI
+
+01:04:01 – Vibe coding and the Bonsai gap
+
+01:06:32 – Agents as perpetual beginners
+
+01:09:12 – Our own tools vs. Claude Code
+
+01:15:14 – What’s left of the craft
+
+01:20:04 – Verification is the hard part
+
+01:25:12 – Narrative code review
+
+01:36:43 – Agent teams and what’s next
+
+01:43:33 – Slop and the code review social contract
+
+TRANSCRIPT
+
+Ron
+
+Well, it’s my pleasure to introduce John Crepezzi. John is an engineer who’s worked on
+developer tools for a bunch of his career, both here and in other places. And these days
+spends most of his time thinking about our tooling for AI and software engineering and AI
+and lots of other things too. That’s true.
+
+John
+
+Most of my time, I think all of my time here and outside the office, this is all I think
+about.
+
+Ron
+
+Well, thanks for joining me.
+
+John
+
+Thank you.
+
+QBasic and an infinite loop (00:00:28)
+
+Ron
+
+So one thing I always like to hear about is how people got into the kind of work they do
+today. And so for you, I’m kind of curious, how did you get into this whole computer
+thing?
+
+John
+
+Yeah, so my dad brought home a computer. Someone at work had given him this computer. He
+brought it home and he plugged it in. He was really excited about it, but I think he
+didn’t really know much about computers. And one thing he did know is he had learned how
+to open QBasic. So this was like a DOS-based computer. He opened QBasic. For anyone that
+doesn’t know what QBasic is, it is a basic IDE and programming language. So it’s both you
+have an editor where you type in and then you hit, I think it was F5, and it will run the
+QBasic program. So he wrote this QBasic program that said, I think it said 10, print Hello
+John, 20, go to 10. And then he ran it and it took over the entire screen and it just
+wrote Hello John over and over again forever.
+
+And I was like, oh, this is so cool. It’s like it knows my name. How do we stop this
+thing? I want to write the next program. And he’s like, I don’t know. I have no idea. So
+we tried to figure it out, but eventually we end up just turning the computer off because
+that’s one way to stop it. And then we turned it back on and he also knew enough to. We
+opened it again and there’s at the top, I think it was F2 for help or maybe F1. And you
+hit the help button and inside of there, there was actually this really robust
+documentation for the QBasic language. And I just spent all my nights after that reading
+it and getting into programming.
+
+Ron
+
+Amazing.
+
+John
+
+Yeah.
+
+Ron
+
+So how did you go from QBasic and just digging into an exciting old DOS machine into doing
+software engineering in a more serious way?
+
+John
+
+Yeah, I think a lot of people were interested in making games. This is I think a pretty
+common introduction to programming. People are like, “Oh, I want to make my own game and
+that’s what I want to do.” For some reason, all I wanted to do was recreate DOS. That’s
+the thing I wanted to do. So I spent a lot of time making my own essentially CLI that
+would replace the normal prompt. I later realized that maybe what I was interested in -
+
+Ron
+
+This is a great origin story for getting into developer tools. The first thing you want to
+do is a metacircular interpreter. You want to write DOS in DOS.
+
+John
+
+Yeah. And I think at the time I had watched Pirates of Silicon Valley enough times that I
+was like, I need to make my own operating system. This is all I wanted to do. So I would
+make operating systems, I would give them little toy names. I’d work on them for a couple
+months and then I would stop and start over.
+
+Ron
+
+When you say operating systems, were you writing your own device drivers? How serious was
+this?
+
+John
+
+Not very serious at the time, but then when I went into university, I went down the course
+a little bit of do I want to be an operating system developer until I realized that no, I
+do not want to.
+
+Ron
+
+There’s also a weird degree to which we just kind of don’t do that anymore. I mean, there
+is still research on operating system kernels, but we’ve all just kind of accepted that
+Linux is our operating system now.
+
+John
+
+That’s right. It was a little less clear for a bit. There were a lot of new things coming
+out. There was a QNX, I think was the thing.
+
+Ron
+
+Sure. And there still is in some ways.
+
+John
+
+Yeah. And there was a lot of development happening in the BSD variants that was also very
+interesting at the time.
+
+Ron
+
+Which are still not dead.
+
+John
+
+Yes, they’re still there.
+
+Ron
+
+Lest the BSD people get angry at us. Great security record still exists. Okay. And then so
+you went and studied in college, you studied computer science?
+
+John
+
+Studied computer science. Kind of got lucky that this is always the thing that I wanted to
+do. I wanted to write code. I didn’t even really know that it was a thing. I was just
+doing it. I remember in high school developing webpages or different things that I wanted.
+I made a poetry website at some point. And then I went to college and I was like, let me
+learn a little bit more about this. Then I got my first job and just have continued since
+then. But it was always with an eye on the thing that I really want to do is I want to
+write code. And as a result, a lot of my work has moved in the direction of trying to make
+it easier and better experience for people writing code.
+
+Tumblr, Square, and GitHub (00:04:25)
+
+Ron
+
+Got it. And then professionally, what do you end up doing?
+
+John
+
+So I worked at a couple startups. I tried to start a few of my own. They did not pan out
+for various reasons. And then I -
+
+Ron
+
+The modal experience of a startup is it doesn’t work.
+
+John
+
+It does not pan out.
+
+Ron
+
+That’s right. That’s why the upside is so good is the median case is not great.
+
+John
+
+Yep. Yeah, some of them have had some success, but ultimately I ended up looking for
+different jobs and I did end up working at companies like Square. And then eventually I
+found myself at GitHub, which is where I was right before this.
+
+Ron
+
+And so GitHub is obviously a developer tool tooling place. What kind of work did you end
+up doing there?
+
+John
+
+Yeah, I did all kinds of things at GitHub. I worked on mostly contributor pages and
+developer tooling. So I worked on the contribution graph for a bit. I worked on the merge
+queue implementation. I worked on the early versions of Codespaces. I kind of just did
+everything. I really liked working there. I used to say that when, so another place I
+worked at in the past was I worked at Tumblr. And one thing that was really neat is, I
+know, I’m old. One thing that’s really neat is I would maybe have a rough day at work and
+I would walk down the subway and I would see people using the Tumblr app and I’d be like,
+“Okay, well that’s pretty neat. People are using that.” Or I worked at Square and I would
+go into businesses and see people conducting business with a terminal.
+
+Oh, that’s pretty cool. But you never really, it’s a different feeling to build something
+that you use. And GitHub was my first real experience being like, the point of this
+company is to make people like me have a better experience with their work. And that’s
+just a totally different kind of satisfaction for me.
+
+Ron
+
+That’s interesting. You can imagine that cutting both ways because the cool thing about
+Tumblr is who uses it? Everybody uses Tumblr. I mean, not anymore.
+
+John
+
+Well GitHub’s this nice middle ground because it’s like a lot of people use it. So you get
+the feeling of you’re benefiting the whole world in your work, but also the people are
+mostly developers. So I think it’s a nice middle ground.
+
+Ron
+
+Or you can live in Silicon Valley and then it feels like everyone is using it.
+
+John
+
+Everyone’s using it.
+
+Ron
+
+All of the ads in the subway are about software engineering.
+
+John
+
+Yeah, you just got to stick to the Silicon Valley coffee shops. It’ll be just like Tumblr.
+
+Building for thousands instead of millions (00:06:41)
+
+Ron
+
+And now you’re working on developer tools at Jane Street, which is in some ways an even
+more focused version of that experience. GitHub is used by many millions of people and the
+tools you build at Jane Street are used by hundreds, a few thousand people. How does that
+feel different?
+
+John
+
+I think one difference is the depth that you can go to, and that’s I think why I ended up
+here mostly, is that at GitHub, you’re building things for a lot of people, but a lot of
+times you’re building things to the greatest common denominator use case. You’re making
+things that work in all the programming languages because people use different ones.
+You’re making things that work with maybe the most mainstream build systems or the most
+mainstream test setups. Maybe you’ll support the most common Java testing libraries or
+Ruby ones because GitHub is built in Ruby, but maybe all of the other ones not so much.
+What’s neat here is that we can really go deep on all of our implementations so we can
+build things that really make some general assumptions about the way that people are
+working. We can assume that they’re using the build system that is the build system pretty
+much everyone uses here.
+
+We can assume they’re pretty much using OCaml and Python, and we can make assumptions
+about, I don’t know, what code review tool they’re using or how they’re getting their code
+merged to production. That means that we can make things work better and be more seamless
+for people.
+
+Ron
+
+So essentially you can just build better end-to-end integrations because you know what are
+the things that people are actually using.
+
+John
+
+Exactly.
+
+Ron
+
+Is there a downside to that of that encourage you to lock into the particular ways things
+work now and if when you want to do more general things? I worry a little bit about a kind
+of premature concretization of the workflows.
+
+John
+
+That’s an interesting question. So are you asking when you start building something, do
+you end up stuck because of choices that were made previously?
+
+Ron
+
+Yeah, just to give a good concrete example, almost all of our programming is in OCaml and
+Python. And there’s a couple of other languages. We have another fun internal language for
+a kind of big complicated modeling thing called Webs. It does think of it as a weird
+alternate universe version of Excel, but sometimes we want to do new things. So at some
+point we didn’t used to use very much Python, and then we started doing a lot more of it.
+We’ve recently started doing a lot more GPU programming. And boy, there’s a lot of
+different programming languages and all the tooling around it is pretty different. To what
+degree does this specialization have a downside of, you can end up hyper-specializing on
+the particular things that we do in a way that might lead you to build things that are too
+inflexible so that when you want to do new things, you can get tied up in having overly
+supported the particularities of the internal infrastructure.
+
+John
+
+Yeah, I feel like there’s a balance between trying to go really deep, but still trying to
+leave enough doors open to changes that might come in the future. It’s also worth saying,
+as you know, because you lead the group, that we have this whole department called Tools
+and Compilers, which is mostly focused on making these developer tools. So in a way, we’ve
+made decisions that I think get us the depth, but at the cost of some inflexibility, but
+we also have a team that works to take us out of that when we need to. I think we’re
+pretty robust to change, but I think it’s a good question.
+
+Ron
+
+Yeah. And I do think part of doing a good job of this is just picking good abstractions,
+both making it so you can take advantage of the particularities, but also trying to put
+the joints in the right place so that when you want to replace pieces of it, it’s not a
+complete disaster.
+
+John
+
+Yeah, I think some of this takes real work. For example, we are using a lot more Python
+and Python is getting integrated into a lot more of our systems, but I think it’d be an
+overstatement to say that it’s integrated everywhere in the same way that OCaml is. Not
+all of the Python code that we write is checked into version control in the same way as
+our OCaml code, or not all of the Python code that we write works well with the build
+system that we have. And this is real stuff that we have to work on to make better.
+
+From Ruby to OCaml (00:10:43)
+
+Ron
+
+So I want to jump back for a second to a thing you mentioned about GitHub, which is that
+GitHub was a Ruby shop. I heard you’re a serious Ruby guy and you worked a lot on Ruby at
+GitHub, gone to conferences, given talks, and now you’ve spent a few years in a very
+different ecosystem working in OCaml, which is just a much more. I mean, there’s this
+technical difference of Ruby is a dynamically type language and OCaml is a statically type
+language, but just the orientation is very different. OCaml’s a language that’s very
+focused on static controls and guarantees of various different kinds. And Ruby, not so
+much. It’s a very different approach to engineering in a very different development
+environment. I’m curious just what you’ve learned from the process of having shifted from
+very much being on one kind of technology to now using a very different set of tools.
+
+John
+
+Yeah. So I think to start by saying I love Ruby. I’ve not traded up on my position here.
+But I do think that when I first started working with OCaml, it struck me that I felt
+slower. I felt like everything was moving slower. I think it is true that Ruby and Rails
+results in less code written more quickly. And the differences feel like they’re really
+about how the maintainability of that code is, but also about the guarantees that you get
+while you’re writing code. So when you first learn, for example, about exhaustive match
+statements, you might be like, “Well, that doesn’t really seem that necessary. I always
+make sure all of my matches have all of the right arms inside of them.” Yeah, so the first
+time that you make a mistake in Ruby of this type, you’re going to end up with an error, a
+runtime error.
+
+And in OCaml, you can just guarantee that this type of issue doesn’t exist, and that’s a
+pretty nice property. I think there are also other things that happen in the design space,
+for example, where when you’re designing some kind of new functionality in Ruby, what
+you’re probably going to end up doing is you’re going to write a doc describing how all
+the different types interact with each other. In OCaml, you can do the same thing. You can
+write out how all the types interact with each other, but with the added benefit that you
+can compile them and make sure that the types you’re writing actually agree with each
+other.
+
+Ron
+
+So is that right? Do people who think about Ruby, do they explicitly talk in a language of
+types, even though there’s no types in the actual formal definition of the language?
+
+John
+
+I wouldn’t say it’s talking in the language of types as much as it’s talking about the
+language of objects where you’re basically saying this object has a property with this
+name, and the type detail almost doesn’t matter. Maybe sometimes you’re wanting to say
+this property is of this particular type, but mostly it’s just understood that if
+something is text, it’s a string and the duck typing helps you when actually there’s a
+mismatch between what you need and what the property actually holds, which I know is a
+crazy. It’s very different.
+
+Ron
+
+It’s very different. So the point about Ruby helps you be more concise. I think one of the
+things that a lot of Ruby people care about a lot is it has really nice metaprogramming
+facilities, which seems great as a way of condensing what you need to actually express
+explicitly in code at the expense of being in many ways harder to reason about. But the
+thing that I always worry about is the kind of maintainability angle. And I actually
+wonder GitHub is a big place with a big software infrastructure. And to me, it’s always
+seemed kind of wild to run a software infrastructure of that size and scale in a language
+like Ruby, both for performance reasons and then also for the scale of software
+engineering. In many ways, I think the most valuable thing about type systems is as a
+communication tool between people. Some person writes down a set of types and that
+expresses some intended set of rules and invariants and structures about the code base,
+and somebody else writes code somewhere else, and the compiler now conveys the message
+from the person who wrote down the types to the person who’s trying to change something
+that uses those types in a way that really helps large groups of people coordinate more
+effectively.
+
+And now when we have all these AIs running around, a whole bunch of virtual people who are
+also operating in the code base, it feels like it provides useful strictures there as
+well. So I’m kind of curious, I know at various points, GitHub has had internal questions
+about how they should build their own development environment and what language they
+should use. And I’m curious how you now reflect on that question and does it make sense
+for something like GitHub at the scale that it’s in now to be in a dynamically type
+language? Or if you were to do it yourself now, would you make different choices?
+
+John
+
+Yeah, so one of the first things you mentioned was the performance side. And I think this
+is something that gets brought up a lot with languages like Ruby or Python. It’s true that
+if you have maybe some kind of, I don’t know, performance-oriented code, it’s going to be
+faster, not in one of these dynamically typed inferred languages. But realistically, most
+operations in GitHub are bound by IO. It’s like a call to a database or it’s a call to the
+Git subsystem. And that’s where most of the time gets spent in a request. I think most
+things that are happening are actually just happening in the viewer-controller layer. And
+most of the cost is actually most of the problems that we had running and keeping GitHub
+up centered around the MySQL database is at the core of the whole thing. Maybe not too
+surprisingly, they get really big and keeping them working well is hard.
+
+Even things like running migrations at that scale is kind of impossible. So there’s a
+bunch of tooling for making it so you wouldn’t have to do alter table statements that have
+the risk of making parts of the database locked.
+
+The second thing that you mentioned. Oh, sorry. And then there’s a bunch of low level Git
+operations that happen. And at GitHub, those mostly don’t happen in Ruby. They happen in
+languages like Go. So any kind of compute-intensive stuff is tucked away in other
+services.
+
+Ron
+
+Got it. So one of the solutions to Ruby isn’t fast enough is where that matters, don’t use
+Ruby.
+
+John
+
+Yep. Sure. Or where you want certain guarantees. And I think that’s a nice middle line to
+draw. I think the other thing you mentioned was about the large code base or large
+organization maintainability of Ruby. There’s a reason probably that a lot of
+organizations that were built on Ruby in their startup days moved away from Ruby later,
+and it’s probably related to this exact thing that you’re saying is that -
+
+Ron
+
+And also a reason that languages like Ruby and Python have gotten optional type systems
+tacked onto the end. The reason that Meta put all this work into creating Hack, which
+started out as an optionally typed programming language and over time has been locked
+down, so it’s now mandatorily typed.
+
+John
+
+Yep. Yeah, and Ruby has one of these called Sorbet. Ruby also has its own internal
+optional type system built by the language maintainer. So this is definitely a thing in
+Ruby as well as it is in Python. And I guess also JavaScript with things like TypeScript.
+
+Ron
+
+For sure.
+
+John
+
+The large organization maintainability is a real problem. And I think you have to decide
+what the cost of a mistake is in systems like this. I mean, GitHub has also a lot of
+downtime and issues staying up, so I feel like it’s a little bit of a loaded question.
+
+Ron
+
+Yeah right now especially, I feel like it’s a very awkward time. Just a couple days this
+ago, so my home project were being slowed down by GitHub.
+
+Active Record, Petrol, and metaprogramming (00:18:05)
+
+John
+
+There’s also a trade that you’re making there. Every time that you’re making a decision to
+use a language like this, you’re also making a decision to be slower in some ways. And one
+example of that is, for example, is Rails has a database ORM. ORM is an object relational
+mapper, which basically maps the database concepts directly onto Rails code or Ruby code.
+It’s called Active Record. And what it lets you do is basically think of the database as a
+series of objects. So you actually define on the objects the relationships between them.
+So you say a book has one author. And then just by writing that one single line, all of a
+sudden all of your book objects get an author method and all of your author objects get
+books as a method also. And you can get that all through just a single line that you have
+to write on the class.
+
+And the OCaml equivalent of that, I guess our equivalent is petrol. And in Petrol, there’s
+a lot of working with the type system to try to get it into the situation where you want
+it to be. And it’s a little unnatural. I think it is very powerful in that it points out a
+bunch of problems that you might mistake, but that power has a cost.
+
+Ron
+
+Yeah. And I think this is a general issue, especially with things that have a kind of
+metaprogramming feel to them, which is a lot of metaprogramming stuff just came out of the
+untyped programming language world, Lisp and Scheme and the like. And it is just easier to
+do things in that domain. And figuring out how to marry metaprogramming and types is hard.
+And we have work on this internally. They have better metaprogramming for OCaml, and
+there’s a lot of fun research on this, but it requires serious academic research to build
+the systems to do this. So there’s a real spot where you are creating complexity that
+otherwise doesn’t necessarily need to exist.
+
+John
+
+It seems like taking that complexity on in some of the common libraries that people use
+might be a worthwhile trade. And I’m pretty excited about the metaprogramming stuff in
+OCaml because maybe it could give us more expressibility where it counts and then we can
+just tell everyone else maybe don’t use these functions. I think that’s another thing that
+we sometimes can run into is that you have a lot of ability to express constraints in the
+type system, but you maybe always shouldn’t. Maybe you shouldn’t always use that. So
+that’s another kind of tension that exists.
+
+Ron
+
+That’s right. The types are a very powerful system for expressing constraint, and there’s
+a lot of very clever things you can do, and you mostly shouldn’t be that clever. It’s like
+cleverness itself is kind of a bad idea.
+
+John
+
+Yep. And something that seems clever, it starts simple. And then later you’re like, well,
+okay, in order to test that now, we actually have to have this kind of bulky setup
+attached to the side. So I think sometimes something seems simple and it’s not until later
+that you realize the actual cost of using it.
+
+Ron
+
+Yeah. And in the end, the thing you’re trying to focus on when you’re engineering systems
+is having the functionality you need while keeping them really simple. And that simplicity
+is critical and you have to be careful not to trade it away for the wrong things.
+
+John
+
+Yep. I should also say, I think I’m maybe not giving entirely enough credit to some of the
+OCaml points here. There are many times where I’m fighting against some annoying type
+system issue with OCaml only to realize that it’s telling me something. It’s giving me
+some piece of information. It’s saying, oh, this thing that you thought you could put
+here, it’s an option and this function doesn’t take an option. That’s a really useful
+thing to know. And I guess in Ruby, that would’ve just resulted in a nil error.
+
+Ron
+
+Right. Again, types is a way of communicating things. Well, let’s move on to talk about
+the AI work you’ve done here. I do feel like this question about the role of types and AI
+actually interrelates in interesting ways.
+
+John
+
+Does seem like it made the whole thing more complicated. Yes, sorry, we’re going to talk
+about that.
+
+Ron
+
+Yeah, but the fact you talk about the work you’ve done here on our AI tooling, you didn’t
+start out with a plan of working on AI stuff because that wasn’t the obviously right thing
+to do when we hired you, but it’s what you ended up doing. So maybe tell me a little of
+the story of how you got into all this stuff.
+
+Three days to build JaneGPT (00:22:14)
+
+John
+
+Yeah. I joined with the intention of working on code search. We wanted to build something
+like Hoogle, which is a Haskell search engine for code. We wanted to build an internal
+Hoogle for OCaml. And that was the guiding reason that I joined. I guess, sorry, that’s
+what you all wanted me to do.
+
+Ron
+
+A good first project. It wasn’t the only thing, but ya know.
+
+John
+
+It was going to be really fun. So I started doing that. And then maybe a week into working
+on that when I just joined the company, ChatGPT came out. So this was, I think, December
+of 2022. Maybe I shouldn’t commit to a date there, but sometime around then. And we start
+looking at ChatGPT, and you could actually see it at the time. You could walk up and down
+the rows here and see people pulling their phones out and using ChatGPT because we had no
+way for them to use it. So then we started looking into how to get everyone access to
+ChatGPT. And the way that it worked at the time was that there were only personal
+accounts. There weren’t pro accounts. So I guess the path would’ve been go to our
+procurement department and say buy everyone an individual pro account with separate credit
+cards, which I don’t know, they probably would’ve done it.
+
+They wouldn’t have been very happy about it though.
+
+Another caveat at the time was that any use of ChatGPT, the website, was subject to
+collecting data for training. But we noticed on the website that there was a carve-out for
+the API, that if you use the API that it wouldn’t be subject to the training. So I built
+this prototype that it was called JaneGPT. It was actually originally written in Rails,
+which is, I was new. I didn’t have a strong grasp of OCaml. So I wrote it in Rails, came
+in the next day, and then everyone was like, “Yeah, let’s build this.” And then we took a
+couple more people and three of us built over, I think, three days or something like that,
+built the first version of this chat application that we use internally called JaneGPT,
+which is basically similar to ChatGPT. And we have the entire firm use that. They all go
+through a central set of credentials that we maintain in our service, and that’s how we
+got started.
+
+That was three and a half years ago. And since then, we’ve continued to find things to
+work on. I’ve never gotten back to the code search part. But someday, I guess.
+
+Ron
+
+I think other people have worked on that.
+
+John
+
+Yeah, it’s true.
+
+Ron
+
+And yeah, maybe it’s worth sketching out what the value that we got out of doing our own
+thing was there. I guess one point to make early on is boy, when ChatGPT came out, they
+were not immediately thinking about it as a commercial product for companies to use. In
+fact, they were totally surprised by how popular it was and how effective it was, and it
+reshaped the entire industry. But early on, they were like, “Yeah, we’re not ready for you
+companies.” So by doing our own thing, we pretty immediately got a thing where we had more
+control over our data, and where we had a way of deploying it to all of the different
+people internally and dealing with all of authentication and data management problems that
+came up from that. Were there any other benefits that we got from building our own thing?
+
+John
+
+I guess another benefit is that maybe a couple weeks after Claude had come out, so this
+was Claude.ai. And I don’t know what we would’ve done if we had just given everyone
+ChatGPT and now they wanted to have Claude too. I guess we would’ve just made them all
+Claude accounts too. But what we were able to do because we had this service was we were
+able to add a model switcher inside of the chat application so they could switch back and
+forth between the two. And then while we were doing that, we built a layer underneath that
+that was made for people to program with. So we put out a set of client libraries to
+people at the firm. They could now write code without having to worry about which LLM they
+were hitting. And what’s nice about that is that as new models come out, if the best model
+for their use case is not from the same vendor, they can just switch it without having to
+change all their code.
+
+Ron
+
+Right. And all of that can go through the same set of rate limits and data controls and
+all of that. And just like we got to, as an organization, have control over our fate and
+our data, but also give people APIs, both APIs for people or rather interfaces for people
+and then APIs for the software engineering part of it so that we could use AI in lots of
+different ways and have the whole thing be coherently managed.
+
+John
+
+Yeah. At the time we weren’t too rate limit constrained. So it was kind of like we’re
+building these rate limits, but they’re almost like, oh, hypothetically, we don’t want to
+be in a situation where one part of the firm is using a ton of LLM usage and it’s starving
+out a different part of the firm’s usage. But now in 2026, we’re really happy that we have
+all of this infrastructure because it is the case that you don’t want one thing that maybe
+someone’s developing in test to take rate away from a production use case. Maybe it’s
+worth stepping back just a little bit and saying more what the team does. Is that -
+
+Ron
+
+Yeah, sure. And it’s what the team does today. There’s been a few years since that early
+stub, and there’s a lot more infrastructure now. So yeah, it would be great to have a tour
+of the things we actually do.
+
+John
+
+So the first thing is we build, like I said, a platform for developers at the firm to
+build LLM-powered applications on top of. So this includes client libraries for making
+just one-off LLM calls. It also includes the ability to specify functions in OCaml or in
+Python that get passed to the LLM that it can use, which also includes ability to specify
+with OCaml types the types that will be presented to the LLM for the function calls that
+it uses. So it bridges over the difference between JSON types and OCaml types.
+
+Ron
+
+And this is the difference between old school, you just give some text to an LLM and it
+completes it to modern agentic flows where the LLM emits tool calls and then you execute
+those tool calls and feed the results back in. And this whole cycle of things that allows
+the models to take action in the world, that’s what these function calls give you.
+
+John
+
+Yep. And then on top of that, we build a series of products that people use. So one
+example of that is this JaneGPT application. Another example that I’m sure we’ll talk
+about a bunch is we build a CLI-based coding assistant, which is called AIDE CLI. And then
+we also put those inside of editors. And then we’ve also increasingly been starting to put
+surfaces inside of things like Python notebooks or inside of the interface for Webs, the
+programming language you were talking about earlier. And so that’s the set of tools that
+we make for humans.
+
+Then there’s also a set of tools that we make for the LLMs. The LLMs have to do things to
+the world. So they need to be able to read the wiki or they need to be able to run bash
+commands on people’s computers. We’ll talk more about that too. But all of the things that
+the LLMs do and the ecosystem of tools that the firm has built, some of these are built by
+us and some of them are built by different parts of the firm. There are over a thousand
+different tools that different parts of the firm have made to do things related to their
+particular business.
+
+Writing evals, and grading models with models (00:29:27)
+
+John
+
+Another thing that our team does is we work on evaluations. So this is essentially writing
+tests for the models where the models try to do some amount of work and then we grade them
+to say how they did on the test. And in doing this work, we both get an idea of how models
+are doing so we can make decisions about which ones to put in front of people by default.
+And we also gain the ability to make improvements to the harnesses and how we set things
+up. So how do we prompt it or what tools do we give it by default, or what skills do we
+present to the model?
+
+Ron
+
+And this is in some ways a crashing in of the worst possible outcome when it comes to
+testing in that normally you spend all this time building testing infrastructure, trying
+really hard to make everything deterministic. And then we have to fit in this
+fundamentally stochastic process where we don’t even have great hard rules about how to
+evaluate. The evaluations themselves are done at least in part by LLMs. So we’re doing our
+best here and trying to make the best possible testing, but it’s really challenging from
+an engineering perspective. You would really like to have good ways of you build your
+product, you test it, you demonstrate that it works well, then you make changes and see if
+it’s better after those changes and see that the tests keep on working. But all sorts of
+irrelevant little details can perturb the outcome of these tests and it can be really hard
+to interpret.
+
+There’s actually a real kind of fundamentally statistical component to this kind of
+evaluation work, which you don’t necessarily have all the other kinds of testing that you
+do.
+
+John
+
+We also do, well, I’m sure we’ll talk about this in a bit, but we build even meta graders.
+So when we use LLM graders, we now have to write evaluations for the LLM grader. There’s a
+whole interesting set of things to talk about there too.
+
+Ron
+
+Yeah, there’s a fundamental problem of I want to see how good an agent is at solving some
+problems. So I’m fundamentally putting something up that’s at the edge of the cognitive
+capabilities of the model. And then I want to evaluate whether it did a good job. But if
+I’m evaluating the strongest model I have at my disposal and I have another instance of a
+roughly equally strong model that’s trying to evaluate whether or not that thing did a
+good job, it’s like there’s a fundamental problem here. You may not just have the
+intellectual wattage to solve the problem that you’re trying to solve.
+
+John
+
+Yep. Yeah, I think there’s a bunch of interesting things here about whether you can trust
+the model to discriminate on the work of another model, even if you can’t trust it to
+produce the thing. A lot of times the thing that comes to mind here is probably you can’t
+build a car, but you can go down to the street and tell me if something is a car. And I
+think that that’s maybe an interesting analogy that’s useful to explain to yourself why
+LLM graders might not be as bad as they seem on the surface.
+
+Ron
+
+That’s right. Although I feel like for a lot of the most important things, it actually
+doesn’t work. Because in some ways, the whole world is kind of piled up to make this not
+work because what happens is it’s not just us running evals on the models. The labs who
+are building the models are running evals on the models and they’re using them as part of
+the RL. And so the models are getting as good as they can get in a way that’s in some
+sense bounded by the verifiability or at least bounded by maybe other things too, but at
+least bounded by the verifiability of the task. And so you have this thing where the
+things that the models are bad at are exactly at the edge of what the models can
+discriminate. And so all of this stuff around taste of code and whether they’re doing
+reward hacking and stuff like that, it’s like the world is built and optimized to build
+things for you that are then hard for the LLMs to evaluate.
+
+John
+
+I think you need to find a way to shrink where the LLM is doing its work. So we’ve
+increasingly started relying on rubrics, for example, as a way to do this. Maybe you can
+take a problem and subdivide the grading of it into a series of problems that maybe are
+more approachable for an LLM than just like, did this model do exactly the thing it was
+supposed to do? There are also more deterministic ways to grade in some cases that are
+also interesting.
+
+Ron
+
+That’s right. If you give a model a task to optimize something, you can see how well it
+optimized it. If you have tests of the correctness, you can actually run those tests.
+
+Giving LLMs their own permissions (00:33:48)
+
+John
+
+Yep. And sometimes the thing you want to look at is even not a grade necessarily.
+Sometimes it’s like how long in wall clock time did this thing take to run or how many
+tokens did it use or how much did it cost? So those are also interesting. And then the
+last area that we focus on is security. So the models, I guess one thing to say is that
+for a long time, everyone, the whole world trusted humans to have good judgment about
+whether they did things or not. And now we’re putting LLMs into this same system that was
+built for humans. And so for example, you put a model inside of a Python notebook and yes,
+clearly that’s something we want the model to do. But in putting it in a Python notebook,
+it’s now running in an environment that’s also running as the human where the model can do
+things like run system and then just immediately escape Python and do whatever it wants to
+do.
+
+So there’s this process that we’ve kind of been going about around some combination of
+building sandboxes and building better access controls into various systems to make it so
+that the models can only do the things that we think are actually safe. And increasingly
+that also has us relying on, going back to the previous point, LLMs judging whether or not
+something’s safe, which is a very interesting thing.
+
+Ron
+
+Right. And it’s not like in the old world, we trusted humans in an unbounded way. I think
+a real fact about our internal environment is that we give people a lot of trust and we
+give them a lot of access to do things, but there’s still an access control system. But if
+you just naively use LLMs and set them up without thinking about the setup at all, then
+the LLMs just inherit all the permissions of the human. And that’s super wrong. You don’t
+want that. You want some kind of bounds on what the LLM can do.
+
+John
+
+My favorite example of this is the compute utilization. So we have a giant compute cluster
+that humans can schedule jobs onto. And of course we want the LLMs to also be able to
+schedule jobs there because some of the work that we want them to do involves lots of
+compute. And in order to access this system, humans have to bid for time. They essentially
+have to say how much in these fake dollars. Is this okay to talk about?
+
+Ron
+
+Yeah, totally.
+
+John
+
+In these fake dollars that they’re willing to pay for their job to be run. And then the
+system has kind of preempting so that if a job that comes along that has a higher dollar
+amount, it gets preempted. And if another job comes along that has a higher dollar amount,
+then the job with a lower dollar amount gets preempted. And LLMs using this thing, they
+just really don’t have a sense for how much their job is worth. And we’ve seen evidence of
+the LLMs thinking that their job’s worth way more than it should be and thus preempting a
+bunch of human work.
+
+Adversarial models and reward hacking (00:36:29)
+
+Ron
+
+Yeah. I mean, I think the other thing that’s important and hard to think about here is
+that to some degree you should think about the models adversarially. People talk about AI
+alignment and it’s a kind of big theoretical AI safety long-term kind of issue where, I
+don’t know, in long-term in AI means in three years or something. But it’s also an
+extremely practical issue right now in the sense that the models will usually try really
+hard to do what you want and usually do a pretty good job of it and will sometimes behave
+really, really adversarially and will be misaligned, will be trying to do a thing that’s
+not the thing that you want them to do. You ask them to solve some problem that involves
+asking them to do something that is beyond the realm of the things they have permissions
+to do. And you might think that a well-aligned model would be like, oh, I guess I should
+not do this and maybe I should go ask for guidance given that there’s a permission system
+that stops me from doing this.
+
+But sometimes what the models will do is just try and work around the permissions. And
+this is kind of like AI psychosis, not like the human AI psychosis, but the AI kind of
+goes crazy. Whereas when you have AIs that you give very long-term tasks to and keep on
+pushing them to try really hard to solve the task, they can just get super weird and do
+very strange things and emit strange sentences and all sorts of bizarre stuff can happen.
+So you really do want to treat it as a kind of adversarial security problem against models
+that are getting increasingly good at hacking and working around controls. So it’s a
+really serious security problem that you have to address.
+
+John
+
+And that comes up in security. It also comes up in places like evaluations where we’re
+like you’re trying to judge the success of the model, but you have to remember, like you
+mentioned earlier, that the models are trained to do the thing that you’re telling them to
+do. And when you’re looking at evaluations, we see evidence of things like reward hacking
+where the model is intentionally skirting around the rules of the system to get higher,
+not to get higher scores, but to do the thing that the human told it to do. So for
+example, the model reaches some warning. We have warnings as errors turned on. So it
+reaches some warning that results in an error that it doesn’t know how to resolve. And one
+really easy way to resolve them is just disable the warnings. And so we see models disable
+the warnings to try to pass the thing that we’re trying to tell them to do.
+
+Ron
+
+And when you say warning, this is compiler level, unused variable warnings or whatever.
+And warnings as errors means if you have a warning anywhere in your code, it just won’t
+build. And we basically have a kind of firm-wide code-based wide practice that yeah, you
+just have to resolve all those warnings. And this is part of how we enforce an important
+subset of our coding standards. And also we have ways of turning them off. And we, the
+humans involved here, almost never use them because it’s almost never a good idea to use
+it. But if you’re monomaniacally focused on, I just need to satisfy this thing I’ve been
+told to do, it’s like, ah, okay, now it’s going to behave differently.
+
+John
+
+Yeah. Yeah. Another one of these is the models will often try to read the solution to a
+problem from a tool that they have access to. So they’ll search around for a code that
+looks like the code that they’re writing. And I guess in production use, that seems like a
+totally fine thing to do. If there’s a solution to the problem that you’re trying to solve
+out there, you should totally go read it. But in evaluations, probably don’t want the
+model to do that.
+
+Ron
+
+Oh, right. This is basically a way of cheating by looking at the answer sheet.
+
+John
+
+Yeah, exactly. And it’s one thing to say the model’s cheating, but actually, like you
+mentioned before, the model is just aligned to wanting to be successful in the tasks that
+you’ve given it.
+
+Ron
+
+I mean, I think cheating isn’t a terrible way of describing it. You can look at thinking
+traces and see things that look like scheming. It understands what you’re asking and it’s
+like, “Well, no, but I want to win the game.” And it tries to get around your intent. So
+we should be a little worried about this alignment question in its fullest form. Sure. And
+so we now sketch out a bunch of different areas where you build technology. Let’s actually
+dive a little bit more into the sandboxing thing, because I think that’s a technically
+interesting one. What have we tried to do in the sandboxing story? And there’s lots of
+sandboxing stuff in the outside world. There’s lots of OS level things that exist. Various
+different coding agents that you can use have some notion of sandboxing built in. What
+have we tried to do? How do external tools fit in?
+
+What are the problems we’ve run into here?
+
+Deny lists, allow lists, and bwrap (00:41:00)
+
+John
+
+Yeah. So I guess originally way, way back, we tried to build a sandbox that denied things,
+meaning the sandbox would let through anything it didn’t have a rule for, and it would
+deny other things. So it was a deny-list sandbox. And I guess as any probably
+security-oriented person listening would say, that’s not how you build the sandbox the way
+you’re supposed to - That’s terrible. That’s a bad sandbox. The way that you should build
+a sandbox is the other way where you’re allow listing. And the idea there is that if
+you’re missing something, that it gets denied. That a good property for security.
+
+Ron
+
+And obviously what we do for people. They start out, in some sense, people are born into
+this world with no permissions, and then they’re granted permissions over time so they can
+do their job.
+
+John
+
+Yep. So we implemented that original sandbox, and then we quickly moved to an allow-list
+sandbox. And the way that we implemented this allow-list sandbox is through a combination
+of tools like bwrap, which is Bubblewrap. It’s a tool for remounting pieces of the file
+system so that the model, or I guess the process in this case that is operating inside of
+the bubble wrap can only access the parts of the file system that you want it to. We also
+use tools like Pasta, which is I think similar kind of thing, but for network connections.
+So we can basically say turn off all the ability to connect to other places and only allow
+these ones. So combination of tools like that allowed us to sandbox bash execution in a
+way that felt pretty good. But there’s a question there of also how did we figure out what
+to put in the sandbox?
+
+And for that, we used a bunch of other external tools like seccomp BPF, which is a tool
+that let us monitor so you can run some process and monitor via a filter exactly which
+files are being accessed by the process. And that gives us an idea of, oh, if we know we
+want to run process X inside of the sandbox safely, we’ll essentially run it in there in a
+monitoring mode, see all the things that it tries to reach. And then now we have a list of
+things to go chase down and try to add to the sandbox. So we went through this process for
+a while of trying to add a bunch of things to the sandbox to make them useful. Although at
+some point we just couldn’t move fast enough because there’s just enough stuff that we
+have to do and enough things that we need to add to the sandbox that we can’t keep up with
+it.
+
+And you run into this other risk of, are we hampering the LLMs too much in the short term?
+
+Ron
+
+And hampering the people who are trying to use the LLM.
+
+John
+
+Yeah. And what we saw as a result is a lot of people maybe deciding to turn the sandbox
+off to be able to do the thing that they’re trying to do. And I guess that seems really
+scary. The point of the sandbox is that you build something that can do the processes that
+you want to run inside of it and make them more safe. But if people are turning it off,
+then you’re not really getting that benefit at all.
+
+Ron
+
+Right. And it’s maybe worth highlighting, I think that this process of going off and
+iteratively building a reasonable set of rules so that you had a sandbox that was
+permissive enough to do the work that we wanted to do, in some sense worked great for a
+subset of tasks. For ordinary software engineering, it was kind of lovely. And that’s
+because software engineering is kind of by, we build tools to make software engineering
+relatively hermetic.
+
+John
+
+We mostly don’t have tests and systems while you’re writing software that are reaching out
+to other services.
+
+Ron
+
+That’s right. And we already, for other reasons, actually have ways of blocking off and
+sandboxing various elements of the build process because we have this big complicated
+build system that wants to make sure that everything is deterministic so it can
+efficiently reuse components. And it just needs to block things off so that you know
+you’re not hitting some random potentially non-deterministic thing in the outside world.
+
+John
+
+Most good test suites turn off access to the network. Just turn it off entirely.
+
+Ron
+
+That’s right. So in some ways, for the core software engineering activities, you already
+need to know your dependencies and therefore you need to control what can be accessed
+during the execution of say a build. But that’s not everything that you do as a software
+engineer. And it really maps poorly on what you do as someone doing large scale research
+at a place like Jane Street where you are hitting various kinds of big data systems that
+you do not have nicely captured and simulated inside of your build process. So part of
+what happened is that sandboxing worked for some kinds of things, but didn’t extend to the
+fuller suite of things that we want to be able to get LLMs to help us work on.
+
+John
+
+At some point we made a decision, this is relatively recently, to change the sandboxing
+approach so that we have essentially we have the same allow list sandbox. And we basically
+say that if something is allowed by the sandbox, we’ll just allow it. And then if
+something is denied by the sandbox, we’ll go ask an LLM classifier whether or not it is
+safe to execute. And if it is, oh sorry, the LLM classifier can either say that it’s safe
+to execute, that it’s not safe to execute, or that it should ask the human for
+confirmation. So aside from just the sandboxing, there are a bunch of other things that
+ended up having to happen. So if you think about sandboxing, you might be able to, with a
+sandbox that is appropriately set up, stop maybe service A from calling to service B or
+allow calls to service B.
+
+But if you think about the things that are actually happening in real software, they’re a
+little bit more nuanced than that. Maybe you want to be able to call service B, but only
+certain endpoints inside of it. And sandboxing kind of can’t help you there because
+sandboxing is operating either at the file system level or at the network level. It really
+doesn’t know inside of this network packet, there’s an RPC call with this name in this
+field.
+
+So another thing that we ended up doing is having to make changes to the RPC
+infrastructure at the firm to make them more descriptive about whether or not they allowed
+calls from AI processes.
+
+Ron
+
+Right. And this is essentially the problem. You have to go one level up. Sandboxing is
+this kind of very valuable low level precise solution that helps you hard block all sorts
+of things that you want to hard block. But at the end of the day, you want to think about
+these LLMs as their own class of agent with their own permissions. And you have to push
+the decisions of whether or not a given agent is allowed to do a given thing. It can’t be
+strictly a question that you answer with some kind of one-size-fits-all sandbox. You have
+to be able to customize things at the level of the applications. Some kinds of things you
+might want to allow LLMs to do, sometimes you might not. And so you now have to start
+thinking about restructuring how your system works in general. And as you were saying,
+pushing all the way to the RPC level.
+
+AI users (00:48:09)
+
+John
+
+And that ends up involving a bunch of other teams and they have to make a bunch of
+changes. I think another interesting thing that happened here was we ended up introducing
+these things called AI users, which are alternate versions of each of the people at the
+firm in a way.
+
+Ron
+
+That’s right. So I’m yminsky, but I also have AI yminsky.
+
+John
+
+Exactly. And when an AI is doing something on your behalf, it is for the most part calling
+as AI yminsky. And in that way we can attribute the use to an LLM. We can make sure that
+the RPCs apply the right set of rules because they know that the caller is an AI version
+of you. It also means that in other places we’ve built other systems that take use of this
+AI-concept. One example is we have a thing that tracks code attribution on a line by line
+level to say which things are written with the assistance of an LLM and which things are
+written by a human. And the things that are written by an LLM show up as the AI version of
+you. So we’re seeing this AI-concept that we introduced for permissioning show up in a
+bunch of other places too.
+
+Ron
+
+And maybe this sketches out a different part of the evolution of the whole way in which
+AIs are working inside of a place like this, which is there was this early era where you
+could see in the outside world, GitHub released these integrations for VS Code, which were
+all autocomplete based. And the way you used LLMs, right? Copilot, right? And the way you
+used LLMs is you use them for fancy autocomplete. And that’s in some sense at an
+architectural level. LLMs are just a incredibly fancy, super intelligent autocomplete
+system, and it’s just using it for that. And then there’s this age where you’re using them
+as these interactive tools that you work with and ask them to do things and they go off
+and do work on your behalf. And now increasingly you’re thinking of them as another class
+of user, an agent, a thing that does stuff in the world.
+
+And now you want to reform lots of things about your systems to be able to accommodate and
+think about and talk about and literally name these agents. So it starts to really get its
+mitts into all sorts of aspects of your infrastructure.
+
+John
+
+Yeah. As you want to give them different personalities or ask them to work different ways
+or send them off on really long-running work. And for a long time, this wasn’t, like you
+mentioned, it wasn’t possible to do. We would have calls with the vendors all the time and
+we were asking them for just. We were saying more persistence. We just wanted the models
+to work longer on a problem and we got what we wanted and it’s enabled this entire new way
+of working, which is really neat. I think for a while, we’ve been talking in this industry
+about agents for a long time, but really the practical effects are really only starting to
+be realized now.
+
+Ron
+
+Right. Yeah, this sort of funny thing where there was the ChatGPT moment where people
+became aware that these things were great and impressive and could do all this amazing
+stuff. But then they really became useful in a serious way for hardcore software
+engineering in November of last year. So in a field that’s been moving very fast, we
+really don’t have very much experience at all of this new world of the models and how they
+work today.
+
+John
+
+Yep. Yeah, I think if everything stopped and there was no more model progress, we would
+still just have years and years of work to do here.
+
+Ron
+
+Right. There’s still a lot of juice to squeeze to get value out of these things, even in
+their current form.
+
+John
+
+Yeah. And at the same rate, we still see the models just steadily improving. I mean, every
+issue that I would’ve thought would be an unbreakable barrier, for example,
+hallucinations. If you understand how the models are trained and you understand how they
+work, just doesn’t really seem like a solvable problem. It’s like if they’re generating
+tokens, the way that they piece them together just seems like it would result in
+hallucinations. But here we are, and it doesn’t really seem like it’s that big of a
+problem anymore. It used to be even going back a year that if you asked the model to copy
+a chunk of code from one place to another, they would copy it and it would make a couple
+changes just for fun along the way. And now it can just change it. It can just reliably
+copy code. One thing that was a problem for a long time is models being able to revert
+changes that they made.
+
+They would revert them, but not revert them entirely. It’s just not a problem anymore.
+
+Ron
+
+Yeah. Yeah, it’s amazing how fast the progress has come. So I’m curious, can you sketch
+out what has been the change of the shape of the tooling that we deliver to people over
+this time? The very first version of this is a website that looks like JaneGPT, and that’s
+evolved in a bunch of other ways. Can you sketch out what that’s looked like?
+
+Tool calling and the birth of the AIDE CLI (00:53:09)
+
+John
+
+Yeah. So we built the website and then right after that, we had been sent this piece of
+code from one of the vendors that was about tool calling and heard rumbles about what tool
+calling is. But this was the first time that they were like, “Oh, we support tool
+calling.” And it’s like the code that they had sent us was essentially a big Python
+package that had a bunch of prompting inside of it. And that was the tool calling support.
+The prompting was basically how you reformat things into text that goes into the model,
+and then the model will sometimes call the function. And by calling the function, it
+basically means the model will just produce some other text that when you parse it, it is
+a tool call. It’s a special format that the model uses, which to be clear, that’s how it
+works still. But what has changed in the meantime is that the vendors have their own APIs
+for dealing with how tool calling works. And importantly, the models are now trained on
+the format of tool calling. But in the first version, we didn’t have any of that. All we
+had was this Python library. The models weren’t trained to use it. It was just a proof of
+concept.
+
+Ron
+
+It just turned out like it was an emergent property. Write into the prompt, you could be
+like, “Hey, when you want to do X, Y, Z, here’s a JSON format that you could emit to ask
+me to do it.” And the models would just do that. They were smart enough to pick up on the
+pattern and then you could be like, “Well, I can just look and see when the JSON shows up,
+and then I’ll just interpret that as a tool call.” And that’s kind of how the whole thing
+worked.
+
+John
+
+Yep. And they were not reliable and sometimes the model wouldn’t use them. Sometimes the
+model would emit a format that wasn’t the format you’d agreed upon. So there were all
+kinds of problems, but we could mostly paper over those. If you want the model to call a
+particular tool and it doesn’t call it the first time, you can just ask it again. This is
+the area that we were living in back then. So on the back of that tool calling
+functionality, we built an OCaml version of that Python library, and we put this tool
+ecosystem in place. We built a couple tools. We built a web-fetch tool. We built a tool
+for accessing internal wiki content. And this is useful, but at the time, like I
+mentioned, the models are not really adept at using the tools, so it doesn’t really take
+off. I think you mentioned that we were building a sailboat, but there was no wind.
+
+Ron
+
+Right.
+
+John
+
+I like that a lot because that’s what it felt like at the time. We built the whole thing,
+we put it out there and we’re like, now everyone’s going to start building stuff and it
+didn’t happen and for good reason.
+
+Ron
+
+Yeah. And just one thing, I do think all of these tools got a lot of uptake in certain
+areas. I think the website itself was used by a lot of people all the time because the
+models were useful for some things, but there were profound limits. It was useful, but not
+transformational.
+
+John
+
+Yep. Yeah. And another thing we did at the time is someone built a library called
+Structured Response here, which is basically a very easy way to write a prompt and get
+back an arbitrary OCaml type from that prompt by basically turning the type into a single
+tool call and letting the model only call that tool and continuing to prompt it until it
+does call the tool effectively. So there were little things that were really useful, but I
+don’t know. For the most part, there wasn’t agentic work. At this point, we had
+functionality for autocomplete similar to Copilot inside of our editors, which are, I
+should say, primarily not. I guess we do use VS Code, but we also use a bunch of Neovim
+and Emacs here. So we had built editor extensions into those. And then people were asking
+to be able to use the chat models inside of the editor. And they didn’t want the chat
+models to do a bunch of stuff. Maybe it would be able to edit a file, but the hope wasn’t
+that they’re going to start writing whole giant pieces of software.
+
+It was just that you can ask them quick questions inside the editor. So we built that. We
+built a markdown buffer version of talking with a model, which is actually pretty cool, I
+think. There’s something there.
+
+It was basically a markdown document that you type a question into. And then when you hit
+enter in the document in normal mode, it would then let the assistant fill in the next
+piece. So we built that. And then at some point, the people that were working on that
+noticed that it was incredibly annoying to have to restart the editor over and over again
+when working with it. So they built this testing tool, which was basically like we will
+just have the chat part hooked up to a CLI tool, but not inside the editor, just so that
+they could quickly iterate on it without having to open the editor every time.
+
+Ron
+
+Oh, you’re saying the point is the people who were working on the tool didn’t want to have
+to reboot. So this is not an end user problem.
+
+John
+
+No, this is actually a developer problem. It’s just annoying to have to open it over and
+over again.
+
+Ron
+
+I see. So people just made their own command line version.
+
+John
+
+Correct.
+
+Ron
+
+Got it.
+
+John
+
+And right around this time, the model started calling the tools a little bit more, just a
+little bit more. And we were like, wait, I think this thing is really useful, this tool,
+this command line tool. And that is the nugget of what eventually ended up turning into
+this AIDE CLI tool, which you can think of kind of like Claude Code or Codex CLI. And that
+brings us into this new part where the models, that new tool has grown in a bunch of ways,
+and now it is a tool that people use for agentic coding. We’ve also. Oh, then the last
+thing we’ve done is we’ve made this very large change. Seeing the models do more and more
+and having them often limited by where they can reach into. We’ve made a change in how the
+actual work gets orchestrated so that the LLMs can essentially distribute work onto any of
+the developer machines at the firm and actually a bunch of other places too.
+
+And then the most recent change that we’ve made is we’ve actually made a change to invert
+the control of how the LLM operates when it’s trying to do things like bash calls. So when
+you use something like Claude Code, you’re typing into terminal on your computer, and then
+the bash calls are running also on your computer. And it’s fairly easy because the
+prompting loop and the place that the work is running are in the same place. We saw this
+opportunity to make a change to split those apart so that people could do things like use
+the chat application ChatGPT to be able to do work that actually ends up happening on a
+computer totally somewhere else. So we have made it so that there’s a central orchestrator
+that takes in all of the prompts and is able to distribute work onto any of the host It’s
+connected to it, where the hosts are roughly all of the developer machines at the firm
+plus a bunch of build boxes.
+
+Ron
+
+And this is not so different from some of the directions that the prompting engines in the
+outside world have moved in of wanting to take that same session and instead of having it
+just sit locally on your box, be in some kind of distributed system where you can access
+it through a web UI or from your phone or -
+
+John
+
+Yeah, from Slack.
+
+Ron
+
+From Slack or whatever. We’ve done this in our infrastructure so that we can orchestrate
+with whatever model we want, with whatever internal tools we want, and keep control of our
+data. And that’s what the centralized version of the system looks like.
+
+John
+
+And it’s enabled new ways to work. One way to work is we have this thing called AIDE mint,
+which is a system by which you mostly via Slack, but there’s a few other ways that you can
+interact with it. You tell it the thing that you want to happen, and it goes and creates a
+new feature, which is essentially our term for pull request. It spins up a build inside of
+that feature, and then it kicks off the agent to go do some work. And you can actually do
+this totally from Slack. So you say, “Oh, this is the thing that I want to happen in this
+area of the code base.” And the agent will go off and do it. But importantly, the work
+that it’s actually doing, it’s like running as you on your computer. It’s not like we have
+a bunch of AI build boxes out there.
+
+It’s just actually distributing the work back to your development machine.
+
+Ron
+
+Although maybe not running exactly as you, maybe it’s running as your AI user.
+
+John
+
+True. Yeah.
+
+Ron
+
+And I think the interesting thing about that last piece, this kind of mint system, is that
+in some sense, it seems totally trivial. It’s like I could have spun up a new piece of
+work by going off and creating a feature and then starting an agent inside of it and
+asking the agent to do it. And it’s a relatively small UX change to make it so that you
+can just say something in Slack and have an agent pick it up and create the feature for
+you and start the work. But that relatively small user experience change was a really big
+difference to people’s behavior. It’s a little bit conflated because it’s also at around
+the time that models were getting significantly better. But we just saw a huge uptake in
+this. And I think the amount of work that was done with agents authoring that work
+dramatically shot up.
+
+John
+
+Yeah. Yeah. It’s something like 45% of the total released features, PRs that get made at
+the firm start with this flow, this kind of asynchronous flow involving an LLM. I think in
+a way it gets you past the blank page problem like you were talking about before with a
+document. You’re writing a document, oh, what do I write? It might be the case that the
+LLM writes something for you and you change most of the details, but there’s still value
+in it doing the first bit. And also it’s worth saying that there’s a lot of toil involved
+in just creating a new pull request. You have to go create a branch. You have to switch to
+that branch. You have to figure out what build targets to put in place. You have to create
+a name for it. You have to get the whole workspace set up correctly.
+
+You have to figure out what files are involved in the change you want to make, and the LLM
+can just jump right through all that.
+
+Ron
+
+And I think another interesting aspect of this is how much of the work is stuff that you
+just let the agent just do, and how much do you hard set up? And I think there were a
+bunch of good choices that were made about what things you just hard set up, not because
+the agent couldn’t do it at all, but because it made things faster and more reliable and
+more consistent to do them in advance in this way.
+
+John
+
+We’re even noticing places where the setup that we’ve provided for the agent is useful for
+the humans too. In a way, the problem that I just described of picking the build targets
+that are appropriate for your work, well, it’s annoying for a human to do too. So the same
+systems that we put in place for maybe authors to say, oh, in this part of the tree, the
+build targets that I probably want are these. Once we do that work, now humans can benefit
+from that change too.
+
+Vibe coding and the Bonsai gap (01:04:01)
+
+Ron
+
+Yeah. I had an interesting conversation earlier this week with someone who’s thinking
+about the kind of vibe coding problem with web apps. So one thing that everyone now knows
+is the models they’re really good at is thwacking together a quick web UI. And this is
+actually an area where we’re really excited about real deal vibe coding, meaning having
+agents write stuff that maybe no human looks at at all. And one of the reasons why it’s
+useful is first of all, it lets you write code. It’s less about changing how you write the
+code you were going to write before and instead let you write code that you would’ve never
+bothered to write at all. Because it’s now just so cheap to do that you can have this kind
+of disposable tool that you quickly throw together to solve some particular problem. Is it
+exactly right? Probably not, but it doesn’t totally matter.
+
+It gives you enough insight and it’s useful for that one use case and you throw it away
+when you’re done. And trying to build workflows that make it really easy and natural to do
+that. And it turns out the models are best at the things that they know best. And so you
+know what they don’t know best? They don’t know OCaml and Bonsai, which is our internal
+system for building web apps and stuff. So they are going to know more off the top of
+their head how to go off and build something in pure HTML and JavaScript, then they’re
+going to be able to build something that fits naturally into our internal ecosystem. And
+part of our answer to that has been like, oh yeah, we can just do some of that. JavaScript
+works here too. We can do some things in that style. But the people who think about the
+web platform here have been trying to think about and understand what’s the gap?
+
+Why does it take much longer to build an app in Bonsai than it does to build an app in
+JavaScript? And one of the things they’ve been discovering recently is some of it has
+nothing to do with the language stuff. Some of it is just like, oh, before I was just
+doing a single index.html that had the JavaScript and HTML in that one file and there was
+no anything to do. It just could generate the text and it was kind of fine. And now
+there’s a feature in Iron, which is our code review system that has to be created and to
+build a process that has to be kicked off. And there’s just more steps and tool calls and
+the thing that actually represents, there’s 30 seconds of actual work to go and generate
+the code.
+
+John
+
+You probably want to grab the Bonsai starter template and get your code off to a good
+start.
+
+Agents as perpetual beginners (01:06:32)
+
+Ron
+
+And so the whole thing in reality takes 10 minutes when it would’ve taken 30 seconds in
+the pure index.html world. And I think at first we were like, oh, maybe this is just the
+cost we’re paying because of internal languages and libraries. No, actually this is maybe
+stuff that we can fix by exactly as you’re suggesting, doing more hard deterministic setup
+stuff so that things are just there and ready and the agent doesn’t have to go and
+discover again how to use all the tools. Again, the agents are kind of amazing. And one of
+their thing that makes them amazing is also one of the deficiencies, which is they are
+perpetual beginners. They never learn how to use the tools. It’s just they rediscover
+every time how to use the tools. And so you kind of have to build your whole system around
+them being these kind of perpetual beginners.
+
+John
+
+Right. Yeah, I think another part of this is you can maybe instill them with a little bit
+of repeated knowledge by writing skills. But then there’s a question, so skills for anyone
+that doesn’t know are these little documents that you write to guide the model on things
+that it does often. And models can also help you write these skills and put them in place,
+but it takes time to write them and it takes time to know that you’re writing them well.
+And once you have a large organization using a bunch of skills, they also become a little
+bit hard to change because changes to skills might have kind of untold impact on different
+parts of the firm. So this is also a problem that we end up having to think a lot about.
+
+Ron
+
+Yeah, actually we’ve talked a little bit about things like skills. We talked about
+function calling. We built our own APIs for it. There’s APIs like MCP, which have come out
+in the outside world, which became public and popular after we’d already built our own
+version of it. Skills is another example of this of we had a thing that we built called
+context bundles. And then later this kind of public standard of skills came out. So this
+is kind of treadmill that’s going on of things are always changing, we’re building things,
+and then often the outside world built things. And that’s a complicated balance. Also, we
+have our own command line tools like AIDE CLI.
+
+John
+
+One nice part about having our own tools is that if we see a need for something, we can go
+make it. But then there’s also this thing you have to do sometimes of being like, okay,
+well, the outside world has really set their standard against this, for example, skills.
+And context bundles are probably not the right answer. So there’s a little bit of
+acknowledgement. It would be a bad decision to be stuck to the decisions that you made
+even when you see the outside world starting to do something different. So sometimes we
+have to go undo work that we did, which we recently did with context bundles. We’ve taken
+context bundles away, we’ve replaced them with skills.
+
+Our own tools vs. Claude Code (01:09:12)
+
+Ron
+
+And then I think the other thing, which is maybe not as obvious from what we’ve said thus
+far is that we actually use third-party tools. So Claude Code and Codex are things that we
+use inside of our world. And that’s also been an interesting experience of it makes some
+things harder, it makes some things better. Can you say a little bit more about why do we
+both go to the trouble of building our own tools and use external third-party tools at the
+same time?
+
+John
+
+Yeah. So I guess there’s two sides of this. One is you want control over the harness, you
+want control over what models get used, even doing things like combining different models
+to give users a better experience. You also, I think with our tooling on the user-facing
+side, want to have a little bit more deep integration into the tools that you know that
+they’re using. For example, in the bottom of our CLI tool, and this is a fairly minor
+thing, but in the bottom of our CLI tool, we show what feature the model is currently
+working in and we let you switch between different features. So you can have the model and
+know that the workspace that it’s working in is kind of locked to the feature that it’s
+currently operating inside of. The model can see the build status for that current
+feature. And these are not things that we have to tell the model.
+
+We have given it a tool that’s like compile and it gets back the status of the current
+compilation. We also want to use external tools because in a lot of ways they’re moving in
+different directions and sometimes faster than we are. These are constantly coming out
+with new functionality. I guess the memory system in Claude Code feels like a good example
+of this, of a place where they’re coming out with functionality that feels in a lot of
+ways more advanced than the thing that we have to solve the same problem. We want to let
+people use the tool that works best for them. We also want to learn. I think one thing
+that came up early on is you felt, at least I felt this tension of like, “Oh, I’m building
+this tool. I really want this tool to be used by everyone because otherwise why are we
+even making it?” But then there’s this kind of realization that if your tool is only the
+best because you’ve closed out competition from the outside world artificially, then it’s
+not really the best tool for the job.
+
+And the decision we want to make is the one that’s going to be best for people here. So as
+a result, we give them access to all the tools. And then we try as hard as we can to make
+ours as good as it can be.
+
+Ron
+
+Right. Yeah. There’s a form of just internal virtuous competition where the fact that you
+get to see these tools in action inside of our code base, you get to see what advantages
+they have. And that helps us learn what we need to build and how we need to make things
+better. I also think there are real challenges to it. Every time you support an external
+tool, there’s real problems you have to think about. There’s a bunch of security questions
+that get significantly more complicated.
+
+John
+
+They don’t always have all the right plug points. Even sandboxing. A lot of the tools have
+their own sandboxing. And if we want sandboxing that’s consistent across all of them, kind
+of hard to use the sandboxing that they provide because it doesn’t provide all the same
+functionality. And maybe mapping our sandboxing rules onto their sandbox is kind of a
+losing effort. So instead we’ve tried to find ways to shim our sandbox in the right places
+so that it gets used across all the clients.
+
+Ron
+
+Yeah. Right. And at the end of the day, I think an ecosystem where we both try and build
+really good tools that are adapted specifically for our use cases and can really advance
+in ways that are hard for external tools to advance, and at the same time have a platform
+that’s really good at supporting third-party tools. It’s a kind of mixed mode interaction.
+I think we’ve actually done this in other places. Another thing that I think makes us a
+little unusual is just as an organization, we’ve done a huge amount of work on having our
+own data centers and having control over the physical machines that we use. You mentioned
+control. Control comes up a lot when you’re building low latency, high performance trading
+systems. You want a lot of control of the physical layer. And we found that control to
+also be useful as we scale up enormously in the kind of GPU fleets that we build.
+
+And also at the same time, as we’ve grown, we found it’s also really useful to use cloud
+offerings. And in part because sometimes there are capacities they have that we don’t.
+Sometimes they’re just better than us. We’ve learned things from, we’ve run the same
+workload in the cloud and it’s way faster. And we’re like, oh, what did we get wrong? And
+we’ve learned important things that way. Often it goes the other direction, but we’ve been
+able to scale up, do new things faster, find more compute capacity, and just generally I
+think do a better job on all sides of the work by doing what seems like in some ways a
+kind of crazy thing of like, oh, are we going to take this simple path or that simple
+path? And we’re going to do both at the same time. And it is hard to do both at the same
+time, but I think there are real rewards to it.
+
+And I feel very similarly here where I think both building our own stuff and having really
+good support for using third-party tools is important. And I don’t think we do any of this
+perfectly. I think neither our internal tools are perfect, nor is our support for using
+third-party tools ideal. But I think that’s the right strategy for the work here.
+
+John
+
+There’s a thing that we end up doing fairly often where we see a place where people are
+leaning heavily on not our tool, and then we end up making changes to our tool to
+accommodate why they’re going to do that. The permissioning changes is one of these. And I
+think you could follow the logic of that and you could say, well, then why do the work if
+you’re always just trying to catch up to the work that the vendor is doing? And I feel
+like that’s not the charitable read on it. What actually is happening is that there are
+also a lot of ways that we’re building things that the vendors aren’t building or we’re
+building deeper integrations or we can fix usability bugs that people here specifically
+have earlier, or we can provide tools that feel more natural to use inside of our system.
+
+And then also we should keep up with all the things that are happening in these external
+clients.
+
+What’s left of the craft (01:15:14)
+
+Ron
+
+If you’re not getting some kind of unique advantage from building your own thing, you’re
+just wasting your time. So we’ve talked a bunch about the tooling that we’ve built to make
+all of this better. I want to talk a little bit about just the experience of programming.
+I feel like everyone in the software engineering world has experienced some of this, but
+I’m kind of curious just from your perspective, what have you seen from your vantage point
+working on all this AI tooling about how the tooling has changed the experience of coding?
+
+John
+
+Probably a lot of people. I got into coding because I liked coding. I liked solving
+problems. I liked even just sometimes you’re solving a problem and it feels like a fun
+puzzle. I even like the part, maybe I’m crazy, I like the part where I know exactly what
+I’m writing and I’m just going to write it right now. I think that part feels really good
+too.
+
+Ron
+
+Yep. It’s like knitting, right? You’re not maybe solving any big ideas, but just the craft
+of putting the code together bit by bit, making it. It’s a little artistic, right?
+
+John
+
+I don’t want it to always be I know exactly what I’m doing, but sometimes. Sometimes it’s
+like at the end of a video game, new games have started doing this thing where at the end,
+there’s a fun level where they just let you, you’re operating with complete immunity or
+something. It’s like you’re just sitting down and you’re doing the actual thing. And then
+you can get into this nice flow state and it’s very good. And I think that both of these
+are at different levels of, I don’t know, not the same as they were before.
+
+Ron
+
+Sure.
+
+John
+
+The just do the thing one, the second one, it seems like LLMs are actually just pretty
+good at doing that. So if the thing that you liked was feeling like you had a full command
+of the type system and that you could quickly roll out changes that feel complicated to
+other people or you have the whole world in your head and you just want to go implement
+it, that’s probably just becoming less of a needed skill. It just seems that way. And then
+on the other side, there’s a lot of places where the thing you have to do is design a
+solution to a code problem and work through the ramifications of implementing that. And
+maybe there’s some particularly performance sensitive pieces. And your job there has
+changed a little bit too in the sense that the model is doing a lot of authoring and
+you’re doing a lot of making sure that it did the right thing.
+
+You’re watching the code that it wrote and offering adjustments where you can. And your
+role has shifted a lot in a lot of cases more toward code review. And then there’s this
+third part, which I feel like is still fairly protected, although we’re on the cusp of is
+the actual software design part. What will you do? How will you do it? What are the pieces
+involved? What will it feel like to use this thing once you’re done doing it? And this is
+a place where obviously people are using LLMs a lot too in things like plan mode. But this
+feels like, I don’t know, the least entirely changed version. In a way, the LLM is just
+the collaborator that you’re working with rather than someone doing the thing that you
+like to do.
+
+Ron
+
+Right. So I think one thing you’re pointing to is that there’s a lot of different parts of
+the work that people gain satisfaction from, and the tools are just kind of changing which
+parts of those work are available. What actually will you do? How will you spend your
+time? There’s some parts of the work that people are going to spend much less time on
+because they’re more automated and that’s good for some people and bad for others. It
+changes the shape of the work in a way that adjusts people’s level of satisfaction.
+
+John
+
+Yeah. I think I hear this pretty often. Even people that were maybe less technical at some
+point are just like, “This is the best thing ever. All of a sudden, this thing that felt
+closed to me is open.” But then people that maybe were making more rote changes for most
+of their time are like, “The thing I loved is gone.” More of that feeling.
+
+Ron
+
+Yeah. One thing I heard from a very strong engineer here was he just highlighted that the
+character of how his job worked at some point felt like 10% of his time was thinking
+really hard and deeply about what to do. And then 90% of the time is on the execution of
+that, which is this knitting thing that we were talking about of taking these ideas and
+unfolding them and learning along the way from that process, but getting your fingers into
+the warp and weft of the code. And now he does that 10% and then sends a model to do the
+other piece and then does another one of those 10% and then sends a model to do the other
+piece. And in some ways it’s good. You get to spend more of your time thinking about hard
+problems. And it’s also kind of tiring. There’s a relaxing piece in the middle that you
+just get less access to.
+
+Verification is the hard part (01:20:04)
+
+Ron
+
+Another thing I worry about here is what it means about how people learn. I think that
+knitting time is also a time where you learn important things. First of all, you learn
+important things about the ideas. You spend that 10% thinking hard about what to do, and
+it turns out the result of the 10% is you are wrong. You have some idea that you’ve
+thought really hard about it and it doesn’t really match reality.
+
+John
+
+How many times you’ve done a refactor, you get through most of it, and then right at the
+end you’re like, oh, that’s why this can’t work. Roll it back.
+
+Ron
+
+Right. And another example of this feedback I’ve gotten, so talking to Leo White, who has
+been on this podcast long ago about a new syntax extension he was building, building a new
+system for basically changing how we think about code coverage. And he had the high level
+idea and got an agent to go off and implement it. And it’s sort of interesting, he felt
+like he was really close to being done then because he’d had the core idea and had the
+agent go off and do the work. And then he was like, “Oh, well, but of course it has to be
+good, so I have to read the code.” And then in reading the code, actually, a lot of the
+work that he would’ve done in the process of authoring it himself, he now had to do in the
+process of reviewing it, of being like, “Oh, well, that’s a bad idea.” And as you went
+through the code and tried to make the changes, you would’ve learned these things along
+the way, but instead he learned it in the course of reading and then giving the feedback
+to the model to clean it up.
+
+And it’s this kind of uncanny thing where it feels like the models are doing more work for
+you than they really are because this verification piece is as hard as it ever was. In
+fact, maybe harder.
+
+John
+
+Seems harder. Yeah.
+
+Ron
+
+Yeah. The models -
+
+John
+
+It’s harder to verify code that you didn’t write, right?
+
+Ron
+
+Right. I mean, you’re always verifying code you didn’t write in the sense of this code
+review and some -
+
+John
+
+There’s code review, but someone else wrote it.
+
+Ron
+
+Right. I think in some ways it’s harder to verify code that no person wrote.
+
+John
+
+Yes. Yes.
+
+Ron
+
+The codes generated by the model, it’s not that they’re worse in any kind of strict way,
+they just have different error characteristics. And our techniques for noticing what’s
+wrong and thinking through what might go wrong are just like, they just don’t work the
+same way and it can be hard.
+
+John
+
+And sometimes you see the model do something and you’re like, “Well, human never would’ve
+done that.” And it can be wrong in a very subtle way that isn’t obvious when you first
+look at it. And I guess part of the risk of all this is that some people might not. When
+the code is there, it’s compiling, it does the thing you want it to do. It’s kind of
+tempting to not understand it. And there’s a risk in that.
+
+Ron
+
+Yep. And there’s a real question of what do we want to understand and at what level?
+People often bring up the compiler as a kind of analogy in the space of it used to be back
+in the ancient days, people would write programs in machine code or assembly code. And
+then there were compilers and people stopped doing that and it was okay. And I think
+that’s both a good and a bad analogy in the sense that it correctly highlights that we
+don’t need to maintain understanding of every level of the system in the way that we did
+in the past. It’s possible to go from one level to another and to be okay with it. And
+also, boy, are these things not compilers? They’re not deterministic. They’re not
+deterministic. They are hard to predict. They do weird stuff. They do weird stuff at every
+level.
+
+This is super dumb. I went to an LLM earlier this week to make a little infographic for
+myself for some exercises I wanted to do. And it was amazing. It happened super fast. It
+did a great job. Of the seven exercises, it rendered them all perfectly well, except for
+the one at the bottom where it had the arms coming out of the floor. It was like, wow,
+that’s a mistake a human would never in a million years have made. And I feel like that
+same kind of arms coming out of the floor thing happens in the code too. And certainly in
+the current regime where we’re in, human understanding is as critical as ever the whole
+way through. You can’t really trust the models to do any piece of it without you
+understanding it. So I think it’s really essential to figure out how to use the models as
+tools for human understanding.
+
+And I feel like people do this. I’ve talked to people who talk about how code review has
+gotten easier because you can use the models to help answer questions. You go through and
+see why did the person do that? What about the API would make that happen? And of course,
+there are still hallucinations, there’s less, but they’re still there. The explanation
+might be confidently wrong. Of course, if you tell the model that it’s wrong, it’ll be
+like, “I’m so sorry. You’re totally right. It’s very compliant.” But it does make
+mistakes. And yet I think it can be a really powerful tool for understanding. And I’m
+curious, how much do you see this tool for understanding thing both in the things that
+people are off building in the firm and in the things that you want to build in the
+future?
+
+Narrative code review (01:25:12)
+
+John
+
+I see code review as a big part of this. So it seems like there’s a lot more work we have
+to do here, but there are opportunities to do things like break up the feature or pull
+requests that you’re reviewing into chunks that actually maybe don’t appear in the
+original in the form that they are. One example of a tool here that’s been helping along
+these lines is a tool called Diffractor, which is basically a code review tool that shows
+you pieces of code laid out in a way that explains the change. But each of the chunks of
+code that you’re viewing is not actually necessarily from the original diff. In a way, you
+can break up the change in a way that the diffs apply on top of each other to make the
+original diff, but tell a little bit more of a story of why this change was made.
+
+Ron
+
+And it’s maybe worth saying a little bit, how does our ordinary code review tooling work?
+And so Iron, you go to review a feature, it shows you each file one at a time. It actually
+has the files ordered in the kind of definition order because OCaml, it turns out, has a
+kind of strict notion of what is the order in which things happen that respects the
+dependency structure of the files, which is kind of useful because you can understand the
+definitions before the uses of the definitions.
+
+John
+
+And then the tests at the end. Right. It’s not always right though. I mean -
+
+Ron
+
+It’s not always the order you want to choose.
+
+John
+
+Yeah, it’s not always the order. When we’re at GitHub and we were thinking about code
+review, a lot of times we were talking about these things called narrative code review,
+which are basically like, I don’t know, could we, instead of showing, for example, on a
+pull request page, a description and then a series of commit IDs that most people don’t
+read and then a diff pane. Could we instead use the commits to lay out more of a story of
+code review? How did the user go from the first thing that they wanted to do to the change
+that eventually ended up in the pull request? And that at the time requires a lot of work
+on behalf of the developer who wrote the change. They have to write individual commits.
+They have to write nice descriptions. They have to do things like rebase when they make a
+change that didn’t end up being in the final.
+
+They want to make a change to make it historically make sense so the story plays out nice.
+
+Ron
+
+So the developer has to tell the story from the beginning. Correct. And often, and that
+story is almost inevitably going to be a lie. It’s not like the real story of what
+happened because the real developer’s journey towards getting a coherent feature is many
+mistakes and back and forth that are not part of the explanatory story of the nice thing
+you got to at the end because you made a lot of mistakes along the way.
+
+John
+
+So the narrative code review would tell a story of the diff end to end. But there’s a
+couple things there. One is, like you said, the developer has to do the work. So that
+seems like a pretty interesting thing for an LLM to do. What if you could get the same
+benefit of it laid out chronologically, but laid out in a way that the human didn’t have
+to put in extra effort? And then another thing that happens is -
+
+Ron
+
+Chronologically or in some order that just makes sense?
+
+John
+
+In some order that makes sense. So in some order that is the order that you would want in
+order to understand why the change was made.
+
+Ron
+
+You might start off with, here’s the end API that we wanted to achieve, and now let’s talk
+about the pieces fitting into it after. It may be doing at least in a limited way, the
+opposite of what our tooling does by default, which is to start at the leaves and go all
+the way from there.
+
+John
+
+Yeah. There’s also information lost in all of the commits and directions that people have
+gone down that they ended up having to back out of. So sometimes when I go to, for
+example, a pull request, I’m just saying to myself, “Oh, you made this choice, but why did
+you make that choice? Why didn’t you go this other way?”
+
+And wow, the information that they did try to go that way and then decided that it
+wouldn’t work would be really, really useful to surface. And of course I can go ask the
+human and they can go try to remember, but ideally we could use LLMs to build tools that
+have a better sense of what kind of ways the human went. In its simplest form, if you take
+something like the original LLM session that a user used when trying to develop the
+feature and make the log of it available to another LLM where the reviewer is asking
+questions about why certain decisions were made, really seems like you could get a lot of
+the way there.
+
+Ron
+
+Do you know how the Diffractor tool itself works? What information does it use for
+analyzing?
+
+John
+
+I don’t, no.
+
+Ron
+
+I mean, it actually highlights a nice thing about these tools, which is one of the ways in
+which the character of the work has changed is that everybody everywhere is thinking about
+this and there are tools bubbling up between the cracks and the sidewalk. People are just
+creating stuff faster than any centralized team can totally absorb them. And then I think
+the goal of the centralized team is to figure out how can we build tooling to help people
+do that and how can we take the best ideas that come up and make them more robust and more
+usable firm-wide and make them more standard?
+
+John
+
+And in the cases where there isn’t a best, how can we build tools that are modular to the
+fact that people want to plug this particular piece? We have a bunch of systems that use
+LLMs to do code review too. So an LLM, this is an LLM looking at code to determine if it
+has bugs or if it has security issues or if maybe it’s caused regressions in certain ways.
+And it seems like there’s probably not going to be one of those that’s right. So in a
+sense, we’d want to build a little pluggable layer where people can bring their own, share
+them, and we can see which ones do best.
+
+Ron
+
+It’s almost necessarily domain specific. The advice that you want to give the LLM when
+you’re trying to analyze a piece of code and figure out if there are issues with it is
+going to depend on where in the code base it is and what are the standards and what are
+the goals of the particular group of people who are building it. So some of the stuff is
+just fundamental diversity that you want to have in the system.
+
+John
+
+There are also just different approaches you can take to this. So one approach might
+involve you creating a little team of agents. We have this thing called the review squad
+that kind of works like that. Or one might be an agent just looking at the code and
+looking for problems, but it can also see the previous code as it was. Or another might be
+that you actually let an agent run with a full environment where it can apply different
+code changes or add tests and see how those tests result. And it’s not obvious to us which
+of those approaches is best. And there are a lot of people interested in experimenting. So
+our job kind of turns into how can we figure out how to make experimentation possible,
+make it so that all of these different attempts can live together.
+
+Ron
+
+Right. So part of what you’re doing is trying to build concrete developer tools for
+people, and part of what you’re doing is building a platform for people to build their own
+developer tools.
+
+John
+
+Yep, that’s right. And for a while we thought about that mostly as the tools that we give
+to the LLM, but increasingly we’re thinking about it as things like the harness and how
+the harness works or how you plug in code review tools or even we have a system for
+monitoring all of the different LLM work that’s happening on your behalf. And we built our
+own interface for showing all of those different LLM things in progress. But then we also
+built a set of APIs that are like a monitor set of APIs that a bunch of other people have
+built their own kind of tooling on top of.
+
+Ron
+
+So we talked some about AIs as tools for understanding and code review is one focus. And
+this nice thing of like, oh, we could have the LLM tell its story. It can decide how to
+organize the diffs and how to present it to you and how to do the work of laying out the
+concepts in an order that’s easy for the human to understand. That seems great, but it’s
+also in some ways kind of very textual. And that feels like a limitation that shouldn’t be
+there. One of the things that feels to me like it should be all over the place is
+leveraging the fact that AIs are actually really good at minting visualizations to build
+more custom ad hoc, one-time only visualizers to help people understand all sorts of
+technical issues, including understanding what’s happening in their code. How much of that
+have you seen and is it important?
+
+Should we be doing things to generate more of it?
+
+John
+
+I haven’t seen much of that personally. I think it’s extremely exciting though. So you’re
+talking about having the LLM maybe make little diagrams of how the code is laid out or how
+different pieces interact with each other so that it can explain a concept to you?
+
+Ron
+
+Yeah, or there’s a performance problem. Can you build me a custom visualization of what’s
+going on there? We lean a huge amount on great visualization tools and I think often very
+high quality, simple, repeatable tools. So we’ve gotten a huge amount of use of Google’s
+Perfetto and we have our own hacked up version of Perfetto that has a few different
+improvements to it and we’ve hooked into our magic-trace and other kind of performance
+analysis tools. But it’s really focused on one relatively narrow class of visualizations.
+And there’s all sorts of other ways that you might want to understand what’s going on
+technically in a code base. And it feels to me like there should be lots of good examples
+of ways of doing this, but I haven’t seen quite as much of this as I feel like there
+should be. And I wonder why we don’t get more of it, both internally, but also in things
+in the outside world.
+
+I felt like, I don’t know, six months ago I was seeing more stories about this, but fewer
+compelling examples. And I’m wondering, maybe it’s less good than I think it is, or maybe
+it’s harder than I think it is, or maybe we’re just not there yet.
+
+John
+
+I think it goes back to the point I was saying earlier about if the models stopped their
+progress, we would still have multiple years of work to do. That a lot of the ways that we
+apply models now are either reflections of how the software process existed before the
+models were around, meaning we’re just trying to plug them into places where a human would
+do exactly the process, but we’re having an LLM help with it. Or they’re a reflection of
+how the model’s interface works. And what I mean by that is that a lot of the interfaces
+that we have for interacting with models, they feel like chat because that’s how the APIs
+work for the vendors. And I feel like we’re just now starting to really get into maybe
+chat’s not the right interface. Maybe the thing you actually want to present to people
+when you’re writing code is something more like little tidbits about the exact code
+changes that you’ve made.
+
+And maybe chat is almost like, yeah, you want to have the log there in case the human has
+a question about why the model did a thing, but maybe it’s not the primary artifact you
+want to show back.
+
+Ron
+
+I think this is a little bit of a artifact of this kind of move from interacting with a
+single agent to interacting with multiple agents. And I think this is both inside our
+world and outside of it. There’s more and more support for these kind of orchestration
+level work where yeah, you need to talk to an agent to do some things, but you also want
+to be able to visualize and absorb and manage and have, in fact, have LLMs manage for you
+the work of many different agents.
+
+John
+
+And there’s a flip of that too. You want to have them not just working on one thing, one.
+We keep saying artifact, so I’m trying not to say. You don’t want them just to work on
+one-
+
+Ron
+
+One code change.
+
+John
+
+One code change or one diagram or one research study. You kind of want them working across
+multiple at once. So there’s the other side as well. It’s like a many to many.
+
+Agent teams and what’s next (01:36:43)
+
+Ron
+
+So I’m curious what you think is coming next in this regard. What do we need to be
+building to better support this kind of ecosystem of many different agents working on
+various different problems, communicating with each other in various ways? It seems kind
+of horrifying from a reproducibility standpoint, but I don’t know, what are the kinds of
+things that we need to try out and experiment with?
+
+John
+
+Yeah, the world has started to move more toward this agent teams concept. It seems like
+there’s still a lot more that we need to do to be able to figure out how they pass
+information back and forth to each other. So a bunch of different techniques about do they
+have a broadcast channel that they can all talk in? Can they talk one-on-one to each
+other? When they have questions about what the other one’s doing, can they look at the
+session log of another one that’s happening or do they have to ask it a question? There’s
+a bunch of decisions here to make about how they work. And then there’s a bunch of ways
+that we haven’t kind of closed the loop in terms of things that they can actually do.
+We’ve tried really hard, but there’s still a bunch of places where the model maybe reaches
+the end of what is possible earlier than it should.
+
+I saw it the other day, this is a total aside, maybe. I saw the other day that someone
+went for the, I think first time and hooked the model up to Blender, which is like this.
+
+Ron
+
+Yeah. Fun.
+
+John
+
+And the model just totally took control of Blender and built essentially a virtual world
+and it was able to see screenshots. Sorry, screenshots of Blender so it can see what it’s
+building while it’s building it. And it’s kind of this idea of what other things have we
+not given the model control of that it could do really well with?
+
+Ron
+
+Yeah. One thing I’m actually really excited about is giving more thorough end-to-end
+control of the kind of testing that we use. And I think it’s already the case that the
+simple entry tests that we do where you just write some kind of small scale unit test,
+integration test, the expect tests that we use a lot internally, which are these kind of
+screenshot style tests that capture output from the run of things. They can already do all
+of that and that’s great. But there’s lots of other larger scale testing that I think in
+many ways we end up having to do because the models aren’t well set up to do it. And
+there’s this problem where you don’t want to become the assistant to the assistant, you
+want to be able to get more of the work in the assistant’s hands. So I feel like having
+nice stories where the same setup you have for deploying your stuff in production can also
+be used for deploying test versions of your application that the models can then directly
+interact with and test out.
+
+I think other kinds of property-based testing and fuzzing tools that you want to run for
+longer periods of time that aren’t part of the ordinary development environment, but at
+some point you want to spin up and run those and they could take a while. You spin up
+Antithesis, it might come back in 12 hours with your results. So these kind of more
+long-term larger scale deployments and testing of systems, I think having that much more
+in the hands of the model I think can extend the amount of drudgery that the model can
+automate away for people.
+
+John
+
+You can also take the development loop and extend it in both directions. Before you’re
+writing code, there’s a bunch of planning that you do. After you’re writing code, there’s
+a bunch of observability and alerting when things go wrong. Could a model know that a
+particular property is expected to change in the metrics, post something being released
+and then watch for it? Seems like a totally reasonable thing for it to do. More and more
+people are using LLMs to help with incident response. Should an LLM that knows about all
+of the code plus knows about the status of the incident and has the ability to look at all
+the systems? Should we be using those more? I feel like we’re spent most of our time on
+the middle part, but there’s a really lot interesting in both directions. Should LLMs be
+helping us plan what kinds of changes we should be making that’s maybe kind of think
+that’s an area that they shouldn’t be working in, but in a sense, I don’t know, LLMs
+proposing ideas for research sounds pretty interesting.
+
+Ron
+
+Yeah. And I do think as we’re saying, there’s the things where we’ve spent effort building
+concrete tools for, and this is stuff people are actually doing in real life across the
+firm. And I feel like what are they doing? They’re doing everything. There’s any kind of
+experiment you can imagine someone is running some version of it. And we have bounded time
+to focus on building tools and we focus on what we think of as the highest immediate value
+things that we can build. But I do think a lot of these extensions are being explored in
+lots of different places. And so I think that’s exciting and also gives us lots of ways of
+learning what are the next important things that we need to do. Because there’s no one
+team that’s going to figure out all of the things that we need to do with our tooling and
+the robust kind of experimentation that’s happening out there has got to be a part of how
+we figure it out.
+
+So we talked some about ways in which maybe the work is made harder in some ways,
+emotionally less satisfying in some components. I’m curious about what you think about the
+flip side of that. What are ways in which having these agents running around makes the
+work more satisfying and more fun and better in other dimensions?
+
+John
+
+Yeah, I think there are a lot of ideas that I would have in my head for a long time, but
+wouldn’t actually see realized. One idea I had for a long time is this thing I keep
+talking about with people called loosey-goosey mode. So the idea here is that you’re in an
+editor, you can enter this mode, loosey-goosey mode.
+
+You essentially go into insert mode and you type pseudocode instead of real code. And then
+when you exit insert mode, it takes your pseudocode and it turns it into real code, just
+like that little area. And it can only edit really the area that you typed in and not the
+rest of the buffer. And I built a prototype of this back when LLMs were kind of nascent,
+but it wasn’t very good. And recently I thought of it again. I thought this would be
+really helpful to me. I had an LLM do it and 30 minutes later I had an extension that
+worked exactly the way that I wanted. So this ability to rapidly prototype and get out
+tools for yourself seems like a pretty big transformative thing that has happened. So that
+seems great. I guess another is my favorite one. Yeah, I guess another thing is the
+non-prototype version of that too, that you can move more quickly through the more rote
+parts of your work so that you can focus on the interesting bits.
+
+Slop and the code review social contract (01:43:33)
+
+Ron
+
+Yep. I think another thing that people worry about, but that I think also there’s real
+upside too, is people worry about the AI slop problem of we talked about how code reviews
+in some ways harder and sometimes really intellectually harder, sometimes just emotionally
+harder. And one of the results you could imagine is just there’s going to be a lot of
+mediocre code that isn’t fully informed on what’s important written by LLMs that get
+better in big jumps when new versions come out, but don’t get better by learning over long
+periods of time about your problem space and your standards and what you need to do to
+solve problems in this particular domain that you’re in. And then we’re just going to have
+over time worse and messier and hard to deal with code bases. But I do think the LLMs are
+also a tool that makes change easier and you can use them as a way of improving the
+quality of code bases of that refactor that seemed not worth it and too hard.
+
+Well, maybe now you can do it because it’s just much easier to achieve. And even in the
+context of code review where someone gave you something to read and you’re like, “Oh, I
+would like to make this much better before releasing, but also we should get it done and
+maybe I should just make sure it’s reasonable and get it out even though it’s not in an
+ideal shape.” But if it’s much easier to take those changes and improvements and turn them
+into a reality, then you can end up with higher quality code that comes out of it. So I do
+think a lot of what comes out of all this technology depends on what we make out of it.
+
+John
+
+Yeah, and how you respond to it. I mean, if you’re worried about Slop, one way you can
+protect is holding your code still to a relatively high standard. You can make that
+choice. And maybe you don’t want to make that choice everywhere consistently. Maybe some
+cases you want to say, okay, we’re pretty tolerable of Slop here and in this other place
+we don’t want to be. There’s another thing related to Slop, which is whether or not you
+deem a feature worth building. This is another interesting one where I think the line has
+moved more toward, yes, it is worth building, but maybe in a way that’s making people feel
+uncomfortable where they have to raise this question of if you weren’t going to build it
+before and you weren’t going to put your time toward it, and now you have an LLM that can
+do this thing, should you actually do it?
+
+Should you have the LLM go do this piece of work that you were going to skip? This is also
+hard for people making tools sometimes because it’s like, I don’t know, maybe your user
+wants a thing that you think shouldn’t exist, but now they’re not coming to you with a
+request, they’re coming to you with code. And it feels like a little bit harder socially
+to be like, “No, we don’t want it,” when the thing they’re presenting is kind of a
+finished product.
+
+Ron
+
+That’s right. There’s a way in which the whole existence of AI agents has kind of broken
+the social contract around code review, where it used to be when someone would hand you a
+feature, it made more sense for you to help get that thing over the line because they put
+in a lot of work, a lot of sweat equity that went into creating that. And now all you need
+is a prompt and a dream and you can for free create a plausible looking problem. But it’s
+still hard work to verify that it makes sense. And you don’t want to add lots of things to
+a system that will make it overall messy and complicated. Even if the code is good, it
+might be that it makes the system that you’re building conceptually complicated for the
+end user. If everyone gets every knob that they want, you just get too many knobs.
+
+And so yeah, figuring out what’s the appropriate kind of pushback. And it’s just like the
+shape of it is different. You’ve always had to deal with these kind of questions.
+Prioritization questions have always been hard, but they now just present themselves in
+different ways. And I think it’s just something that we have to learn to adapt to
+basically at a cultural level.
+
+John
+
+Yeah, I think that’s right. One framing I’ve found helpful that I’ve heard recently is
+just think of they are coming to you with code. They probably put some time into it. Think
+of it as a prototype and then just still have the discussion about whether or not the
+thing is warranted. Culturally, for the whole engineering organization, we need to be more
+comfortable understanding, yes, that is code. It’s useful to look at so that we have the
+thing that we’re talking about together, but let’s talk about the merit of the change
+instead.
+
+Ron
+
+That’s right. And the prototypes can be amazing. It can be like someone has an idea of
+what to do and there’s the prototypes they hand you. But the amazing thing is all the
+prototypes they threw away. They try to think and you’re like, “Yeah, this sucks.” And
+they get rid of it. It’s like there’s real work in refining the idea and presenting it.
+And then maybe the implementation isn’t good and you don’t want to use that. But I do
+think at the end of the day, it’s a powerful new way of people to work together and
+exchange ideas. And in the end, I think that’s really exciting.
+
+John
+
+Agree.
+
+Ron
+
+All right. Well, maybe that’s a good place to stop. Thanks so much for joining me.
+
+John
+
+Thank you for having me.
+
+Ron
+
+You’ll find a complete transcript of the episode along with show notes and links at
+signalsandthreads.com.
+
+TECH TALKS
+
+Watch Tech Talks 
+
+TECH BLOG
+
+Read The Tech Blog 
+
+JANE STREET TECH
+
+Learn More 
+
+JOIN OUR TEAM
+
+Apply 
+
+© Copyright 2020- Jane Street Group, LLC. All rights reserved.
+
+Jane Street and the concentric circle mark are registered trademarks of Jane Street.
+
+ Ad and Cookie Policy
+   |  
+ Privacy Policy
+
+Jane Street is an Equal Opportunity Employer
+

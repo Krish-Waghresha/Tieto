@@ -1,0 +1,640 @@
+
+
+ Jane Street Blog - What if writing tests was a joyful experience? 
+
+ Home
+
+ All Posts
+
+ Machine Learning
+
+ Authors Index
+
+ Jane Street
+
+ Subscribe to email updates
+
+Subscribe to Email Updates
+
+ Featured Reads
+
+ Read more
+
+Using ASCII waveforms to test hardware designs
+
+ Read more
+
+Finding memory leaks with Memtrace
+
+ Tags
+
+async
+
+book
+
+c
+
+camlp4
+
+code-review
+
+comments
+
+compiler
+
+core
+
+hackerschool
+
+hg
+
+incremental
+
+internship
+
+interviewing
+
+machine-learning
+
+ocaml
+
+parallel-programming
+
+performance
+
+ppx
+
+real-world-ocaml
+
+registers
+
+speed
+
+ui
+
+ Get the RSS feed
+
+ Jane Street Open Source
+
+ Join Our Team
+
+What if writing tests was a joyful experience?
+
+ Jan 09, 2023 | 
+
+ 14 min read
+
+ Share on Facebook
+
+ Share on Twitter
+
+ Share on LinkedIn
+
+By: James Somers
+
+At Jane Street we use a pattern/library called “expect tests” that
+makes test-writing feel like a REPL session, or like exploratory
+programming in a Jupyter notebook—with feedback cycles so fast and
+joyful that it feels almost tactile. Having used them for some time now
+this is the only way I’d ever want to write tests.
+
+Other languages call these “snapshot” tests—see for example Rust’s
+ expect-test, which seems to have been inspired
+ by our library, or Javascript’s Jest. We
+ were first put onto the idea ourselves by Mercurial’s unified
+ testing format, and so-called “cram”
+ tests, for testing shell sessions.
+
+In most testing frameworks I’ve used, even the simplest assertions
+require a surprising amount of toil. Suppose you’re writing a test for
+a fibonacci function. You start writing assert fibonacci(15) ==
+... and already you’re forced to think. What does fibonacci(15)
+equal? If you already know, terrific—but what are you meant to do
+if you don’t?
+
+I think you’re supposed to write some nonsense, like assert
+fibonacci(15) == 8, then when the test says “WRONG! Expected 8, got
+610”, you’re supposed to copy and paste the 610 from your terminal
+buffer into your editor.
+
+This is insane!
+
+Here’s how you’d do it with an expect test:
+
+printf "%d" (fibonacci 15);
+[%expect {||}]
+
+The %expect block starts out blank precisely because you don’t know
+what to expect. You let the computer figure it out for you. In our
+setup, you don’t just get a build failure telling you that you want
+610 instead of a blank string. You get a diff showing you the exact
+change you’d need to make to your file to make this test pass; and
+with a keybinding you can “accept” that diff. The Emacs buffer you’re
+in will literally be overwritten in place with the new contents [1]:
+
+It’s hard to overstate how powerful this workflow is. To “write a
+test” you just drop an [%expect] block below some code and it will
+get filled in with whatever that code prints.
+
+Just the other day I was writing a tricky little function that rounds
+numbers under an unusual set of constraints; it was exactly the kind
+of thing you’d want to write in a REPL or Jupyter notebook, to iterate
+quickly against lots of examples. All I had to do was write the
+following right below my function:
+
+let%expect_test "Test the [round] function on [examples]" =
+ Ascii_table.simple_list_table
+ [ "n"; "f(n)" ]
+ (List.map examples ~f:(fun n -> [ n; round n ] |> List.map ~f:string_of_float));
+ [%expect {||}]
+
+and voila my editor produced a little table of results. Naturally my
+first implementation had all kinds of bugs—some entries in the table
+looked wrong. Improving the function became a matter of fiddling,
+observing the diffs that produced, fiddling some more, and so on,
+until the table finally looked the way I liked. (Had I wanted, I could
+have at that point used something like Quickcheck to do
+exhaustive fuzz testing.) The table meantime lived on as
+documentation—indeed for many functions, seeing a handful of example
+inputs and outputs is a lot clearer than a prose description.
+
+Of course, the table is not just an exploratory aid and a bit of
+documentation but also, you know, a test. If someone ever tweaks my
+function or any of its dependencies, the frozen output in the
+[%expect] block guards against unexpected behavior. In expect tests,
+regressions are just diffs.
+
+(In general, although it’s possible to inline tests right where the
+code is written, at Jane Street we tend to clearly separate test and
+real code. Tests live in their own directory and are written against
+the public interface, or, when testing private implementations,
+against a For_testing module exported just for that purpose.)
+
+What’s wrong with regular old unit testing?
+
+Back when I worked at a Ruby web dev shop we used to write a lot of
+tests like the following, taken from a blog post about RSpec,
+a popular Ruby testing framework:
+
+before do
+ @book = Book.new(:title => "RSpec Intro", :price => 20)
+ @customer = Customer.new
+ @order = Order.new(@customer, @book)
+
+ @order.submit
+end
+
+describe "customer" do
+ it "puts the ordered book in customer's order history" do
+ expect(@customer.orders).to include(@order)
+ expect(@customer.ordered_books).to include(@book)
+ end
+end
+
+describe "order" do
+ it "is marked as complete" do
+ expect(@order).to be_complete
+ end
+
+ it "is not yet shipped" do
+ expect(@order).not_to be_shipped
+ end
+end
+
+This is a perfectly lovely test. But think: everything in those
+describe blocks had to be written by hand. The programmer first had
+to decide what properties they cared about—(customer.orders,
+customer.ordered_books, order.complete, order.shipped)—then
+also had to say explicitly what state they expected each field to be
+in. Then they had to type it all out.
+
+My main claim is that all that deciding and typing is painful enough
+that it actually discourages you from writing tests. Tests become a
+bummer instead of a multi-tool that helps you:
+
+visualize behavior as you hack on an implementation
+
+express and document intent
+
+freeze a carefully crafted version of that output to protect against
+regressions
+
+If RSpec had expect tests one could have simply written:
+
+expect_test "#submit" do
+ @book = Book.new(:title => "RSpec Intro", :price => 20)
+ @customer = Customer.new
+ @order = Order.new(@customer, @book)
+
+ @order.submit
+ p @customer.orders
+ p @order
+ expect ""
+end
+
+and all the same state would have been made visible.
+
+Aren’t lazy tests bad tests?
+
+I hear you already: tests should be explicit. You want to define
+up front the properties you care about, the output you’re expecting,
+and so on. (Especially in TDD.) You don’t want to just dump a bunch
+of state and leave it to the reader to sort out what’s going on. And
+you don’t want to have to wait for your function to be written to be
+able to write tests for it.
+
+You’re right! But expect tests can be just as targeted as a classical
+unit test. I can always print out order.shipped? and type the string
+"false" in my expect block. I can do this before I’ve written any
+code and I’ll get the same sorts of errors as someone doing TDD with
+RSpec.
+
+The difference is that I don’t have to do that. Or I can defer doing
+that until after I’ve done the fast-and-loose thing of “just seeing
+what happens.” That’s the beauty of a blank expect block: it is an
+invitation to the runtime to tell you what it’s thinking.
+
+Of course, one of the downsides of just dumping state without doing
+any filtering is that you can get lost in a bunch of irrelevant
+details, and it’s harder for the reader to know what’s important, both
+when they read the test the first time, and when a code change causes
+the test output to change. It also makes it more likely that you’ll
+pick up spurious changes.
+
+Thus the art of expect tests is in producing output that tells a
+concise story, capturing the state you care about. The best tests
+take pains to elide unnecessary detail. Usually they use helper
+functions and custom pretty-printers to craft the output.
+
+When expect tests were first adopted at Jane Street, they spread like
+wildfire. Now they form the better part of our test suite,
+complemented in places by property-based
+testing. Classical assertion-style unit tests still have
+their place—just a much smaller one.
+
+Some real expect tests
+
+The tedium of writing your expected output by hand only grows with the
+complexity of your actual system. A table of numbers is one
+thing—imagine trying to describe the state of the DOM in a web
+application or the state of an order book in a financial exchange.
+
+Web UI tests
+
+Here’s an excerpt of a real test from a toy web app built using
+Bonsai, Jane Street’s open-source web framework for OCaml. (Think
+React or Elm.) One of Bonsai’s most powerful features is its ability
+to let you easily write realistic tests, in which you programatically
+manipulate UI elements and watch your DOM evolve.
+
+In this example, we’re testing the behavior of a
+user-selector. Whatever you type in the text box gets appended to a
+little “hello” message:
+
+let%expect_test "shows hello to a specified user" =
+ let handle = Handle.create (Result_spec.vdom Fn.id) hello_textbox in
+ Handle.show handle;
+ [%expect
+ {|
+ <div>
+ <input oninput> </input>
+ <span> hello </span>
+ </div> |}];
+ Handle.input_text handle ~get_vdom:Fn.id ~selector:"input" ~text:"Bob";
+ Handle.show_diff handle;
+ [%expect
+ {|
+ <div>
+ <input oninput> </input>
+- <span> hello </span>
++ <span> hello Bob </span>
+ </div> |}];
+
+Notice that there are two expect blocks. (This allows you to make
+multiple assertions within a given scenario and to scope setup/helper
+code to just that scenario.)
+
+The first makes our UI visible, and the second—which contains a
+diff—shows some behavior after you programatically input some
+text. Bonsai will even show you how html attributes or class names
+change in response to user input. Tests can include mock server calls,
+and can involve changes not just to the UI but to the state that
+drives it. With tests like these you can write an entire component
+without opening your browser.
+
+Tests of low-level system operations
+
+Our popular magic-trace tool, which uses Intel
+Processor Trace to collect and display high-resolution traces of a
+program’s execution, makes heavy use of expect tests. Some are simple,
+for example this one that tests the program’s symbol demangler:
+
+let demangle_symbol_test symbol =
+ let demangle_symbol = Demangle_ocaml_symbols.demangle symbol in
+ print_s [%sexp (demangle_symbol : string option)]
+;;
+
+let%expect_test "real mangled symbol" =
+ demangle_symbol_test "camlAsync_unix__Unix_syscalls__to_string_57255";
+ [%expect {| (Async_unix.Unix_syscalls.to_string) |}]
+;;
+
+let%expect_test "proper hexcode" =
+ demangle_symbol_test "caml$3f";
+ [%expect {| (?) |}]
+;;
+
+let%expect_test "when the symbol is not a demangled ocaml symbol" =
+ demangle_symbol_test "dr__$3e$21_358";
+ [%expect {| () |}]
+;;
+
+Others serve as a kind of stable documentation, giving visibility into
+the guts of the running system—like this test that demonstrates
+what a trace of an OCaml exception will actually look like (shortened
+for clarity):
+
+let%expect_test "A raise_notrace OCaml exception" =
+ let ocaml_exception_info =
+ Magic_trace_core.Ocaml_exception_info.create
+ ~entertraps:[| 0x411030L |]
+ ~pushtraps:[| 0x41100bL |]
+ ~poptraps:[| 0x411026L |]
+ in
+ let%map () =
+ Perf_script.run ~ocaml_exception_info ~trace_scope:Userspace "ocaml_exceptions.perf"
+ in
+ [%expect
+ {|
+ 23860/23860 426567.068172167: 1 branches:uH: call 411021 camlRaise_test__entry+0x71 (foo.so) => 410f70 camlRaise_test__raise_after_265+0x0 (foo.so)
+ -> 3ns BEGIN camlRaise_test__raise_after_265
+ -> 6ns BEGIN camlRaise_test__raise_after_265
+ -> 9ns BEGIN camlRaise_test__raise_after_265
+ -> 13ns BEGIN camlRaise_test__raise_after_265
+ -> 13ns BEGIN camlRaise_test__raise_after_265
+ -> 13ns BEGIN camlRaise_test__raise_after_265
+ -> 13ns BEGIN camlRaise_test__raise_after_265
+ -> 14ns BEGIN camlRaise_test__raise_after_265
+ ...
+ |}%]
+
+State machine tests
+
+Here’s a test from a toy system at Jane Street that processes
+marketdata. (We use this system as part of one of our “dev teach-ins,”
+two-week internal classes put on for developers meant to expose them
+to different systems, libraries, ideas, and idioms from around the
+firm: e.g. Advanced functional programming or Performance
+engineering.) The goal of this particular test is to show how the
+state of a two-sided order book with “buys” and “sells” responds to an
+incoming order.
+
+To write the test, all you have to do is set up the situation, then
+drop a blank [%expect] block:
+
+let d = create_marketdata_processor () in
+(* Do some preprocessing to define the symbol with id=1 as "APPL" *)
+process_next_event_in_queue d
+ {|
+((timestamp (2019-05-03 12:00:00-04:00))
+ (payload (Add_order (
+ (symbol_id 1)
+ (order_id 1)
+ (dir Buy)
+ (price 10.00)
+ (size 1)
+ (is_active true)))))
+|};
++ [%expect {||}];
+
+The compiler then figures out what should go inside the block. You’ll
+find that you get a build error telling you that it’s not supposed to
+be blank. Accepting the proposed diff, you end up with a block like
+this:
+
+[%expect {|
+process_next_event_in_queue d
+ {|
+((timestamp (2019-05-03 12:00:00-04:00))
+ (payload (Add_order (
+ (symbol_id 1)
+ (order_id 1)
+ (dir Buy)
+ (price 10.00)
+ (size 1)
+ (is_active true)))))
+|};
+[%expect {|
++ ((book_event
++ (Order_added ((order_id 1) (dir Buy) (price 10.0000000) (size 1))))
++ (book
++ ((instrument_name AAPL)
++ (book ((buy (((price 10.0000000) (orders ((1 1)))))) (sell ()))))))
+|}];
+
+This is beautiful: a plain-text representation of the state of your
+system. The expect block shows you the order book. By keeping the
+order book small and simple, you ensure the test is legible. But you
+don’t need to make any specific assertions about it.
+
+Compare what you might write for that last block in RSpec-land:
+
+expect @book["AAPL"].sell to_be empty
+expect @book["AAPL"].buy[0].price to_equal 10
+expect @book_events to.include(@order)
+
+Explicitly checking every aspect of the entire state of the order book
+would be too tedious, so instead, you write a handful of what you
+think are the most important assertions. This takes thinking, typing,
+and time.
+
+It also leaves you vulnerable later, when someone borks the
+implementation of the order engine. Let’s say that now it mangles the
+size of orders as it adds them to the book. Whereas the handcrafted
+assertions above will continue to pass—you never said anything
+about the size of the order on the book—the expect test will fail
+with a nice little diff showing you that size 1 inadvertently became
+size 100.
+
+Of course it is not always true that expect tests catch more than
+regular unit tests—you have exactly the same level of flexibility
+in each—but by relieving you from having to dream up exactly what
+you want to assert, expect tests make it easier to implicitly assert
+more. Ironically, they capture things you never expected them to.
+
+The pleasure of plain text
+
+This style of testing encourages you to make printing itself easy,
+because most tests involve little more than setting up some data and
+printing it. And indeed at Jane Street, we use code generators (like
+ppx_sexp_conv) that make it trivial to create a stringified
+representation of just about any type. (You’ll have noticed above that
+we lean heavily on S-expressions.)
+
+People find expect tests so convenient that they’ll sometimes go to
+great lengths to create helpers for producing plain text output, even
+in places where you might not expect it. For instance in
+Hardcaml, an open-source DSL for writing FPGA simulations
+that Jane Street now maintains, many of the tests feature square
+plain-text
+waveforms
+that show you exactly what e.g. your clock and clear lines are doing:
+
+let%expect_test "counter" =
+ let waves = testbench ()
+ Waveform.print ~display_height:12 waves
+ [%expect {|
++ ┌Signals────────┐┌Waves──────────────────────────────────────────────┐
++ │clock ││┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌──│
++ │ ││ └───┘ └───┘ └───┘ └───┘ └───┘ └───┘ │
++ │clear ││ ┌───────┐ │
++ │ ││────────────────────────┘ └─────────────── │
++ │incr ││ ┌───────────────┐ │
++ │ ││────────┘ └─────────────────────── │
++ │ ││────────────────┬───────┬───────┬─────────────── │
++ │dout ││ 00 │01 │02 │00 │
++ │ ││────────────────┴───────┴───────┴─────────────── │
++ │ ││ │
++ └───────────────┘└───────────────────────────────────────────────────┘
+ |}]
+
+Toward better tests for all
+
+I hope this post encourages more people to try the “snapshot” style of
+testing. My own experience with it is that I never want to go back to
+a workflow where my computer isn’t finishing my tests for me. If
+nothing else, an editor integration that can take an expected result
+and put it in its proper place in an assertion goes a long way. Typing
+those assertions by hand feels somewhat like fixing the formatting of
+source code by hand: something I was perfectly content doing for years
+until a tool came along that made the previous practice seem faintly
+ridiculous.
+
+From the looks of it, this idiom—which again we didn’t invent; we
+borrowed it from Mercurial, though I’m not sure if that’s the ur
+source or if it goes further back—seems to be catching on more
+widely. Maybe someday it’ll go truly mainstream.
+
+Footnotes
+
+[1] We used to call these things
+quine tests because in effect
+you’re dealing with a program that knows how to print its own
+source.
+
+ previous post
+
+ next post 
+
+Subscribe to Email Updates
+
+Signals & Threads Podcast
+
+Listen to the latest episode
+
+Featured Tech Talk
+
+The Algorithm for Precision Medicine
+
+Jane Street YouTube Channel
+
+Featured Reads
+
+ Read more
+
+Using ASCII waveforms to test hardware designs
+
+ Read more
+
+Finding memory leaks with Memtrace
+
+Tags
+
+async
+
+book
+
+c
+
+camlp4
+
+code-review
+
+comments
+
+compiler
+
+core
+
+hackerschool
+
+hg
+
+incremental
+
+internship
+
+interviewing
+
+machine-learning
+
+ocaml
+
+parallel-programming
+
+performance
+
+ppx
+
+real-world-ocaml
+
+registers
+
+speed
+
+ui
+
+RSS
+
+ Get the RSS feed
+
+Jane Street Open Source
+
+ From committing patches to the Linux kernel to releasing our own projects, we’re always looking for ways to participate in the open source community.
+
+Join Our Team
+
+Where FP meets the real world.
+
+If you're interested in working at a place where functional programming meets the real world, then apply for a job at Jane Street.
+
+Learn more
+
+Who We Are
+
+What We Do
+
+Client Offering
+
+The Latest
+
+Culture
+
+Join Jane Street
+
+Contact Us
+
+Disclosures & Policies
+
+ © Copyright 2015-2026 Jane Street Group, LLC. All rights reserved. Services are provided in the U.S. by Jane Street Capital, LLC and Jane Street Execution Services, LLC, each of which is a SEC-registered broker dealer and member of FINRA (www.finra.org). Regulated activities are undertaken in Europe by Jane Street Financial Limited, an investment firm authorized and regulated by the U.K. Financial Conduct Authority, and Jane Street Netherlands B.V., an investment firm authorized and regulated by the Netherlands Authority for the Financial Markets (Autoriteit Financiële Markten), and in Hong Kong by Jane Street Hong Kong Limited, a regulated entity under the Hong Kong Securities and Futures Commission (CE No. BAL548). Each of these entities is a wholly owned subsidiary of Jane Street Group, LLC. This material is provided for informational purposes only and does not constitute an offer or solicitation for the purchase or sale of any security or other financial instrument. | Jane Street and the concentric circle mark are registered trademarks of Jane Street.
+
+ Privacy
+
+ Cookies
+
+ Jane Street Group, LLC uses cookies and similar technologies, including third-party cookies, on this Site to provide basic functionalities and perform analytics. You may accept or decline cookies by selecting “Accept” or “Reject”. For information regarding our cookie practices, see Jane Street’s
+ Ad and Cookie Policy.
+
+ Accept All
+ Reject All
+
