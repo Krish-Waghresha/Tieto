@@ -35,6 +35,11 @@
 | [findings/video/](findings/video/) | Transcript of "Why this Claude Code engineer uses HTML files as AI specs" (How I AI, 2026-05-18) |
 | [findings/wave2-adversarial-reviews.md](findings/wave2-adversarial-reviews.md) | Four adversarial reviews of pipeline v0.2 |
 | [findings/fact-check-waveB.md](findings/fact-check-waveB.md) | Fact-check of slide-worthy claims |
+| [findings/wave-postbuild-reviews.md](findings/wave-postbuild-reviews.md) | Security + judge reviews of the end-to-end demo, and what was fixed |
+
+## Demo (reference implementation, not final)
+
+Branches `demo/base` (bot, policy, workflows, base sample), `demo/agent-2283` (agent change), `demo/reports` (rendered report). PR #1: `demo/agent-2283` → `demo/base`.
 
 ## Method
 
