@@ -1,5 +1,7 @@
 # Classification References
 
+**Running the interactive invoice playground? Start with [PLAYGROUND_SETUP.md](../PLAYGROUND_SETUP.md).** It has the exact PR #3 URL, invoice-only setup commands, and troubleshooting for accidentally opening the older demo.
+
 Two C# source snapshots -> Roslyn method graph and facts -> attention policy -> one colored change map.
 
 This is a synthetic classifier prototype with a local GitHub PR watcher. It does not reuse the earlier MessagePack classification or report UI.

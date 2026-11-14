@@ -11,3 +11,4 @@ classifier/fixtures/invoice-import/obj/
 classifier/out/
 classifier/node_modules/
 classifier/test-results/
+/.env.local
