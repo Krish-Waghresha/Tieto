@@ -1,0 +1,121 @@
+name: decision-review
+# Decision-First Review demo: run proofs on the upstream code, build the ledger, post one sticky comment,
+# upload a single-file HTML report, and leave the human sign-off status pending.
+on:
+  pull_request:
+    branches: [demo/base]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: decision-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  proofs:
+    name: Executable proofs (upstream MessagePack, sandboxed runner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Clone upstream challenge repo (full history for versioning)
+        run: |
+          git clone --quiet https://github.com/te-industry-tech-office/junction26-messagepack-csharp.git upstream
+          git -C upstream fetch --quiet origin ju26-issue-2283
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: upstream/global.json
+      - name: Run proofs P0-P4
+        run: ci/run_proofs.sh "$PWD/upstream" "$PWD/evidence"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence
+          path: evidence/
+          retention-days: 30
+
+  review:
+    name: Decision-First Review
+    needs: proofs
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR: ${{ github.event.pull_request.number }}
+      AUTHOR: ${{ github.event.pull_request.user.login }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Use the BASE revision's bot and policy (a PR cannot change the rules that judge it)
+        run: git worktree add --detach bot "$BASE_SHA"
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: evidence
+          path: evidence
+      - name: Unit-test the verdict engine
+        working-directory: bot
+        run: python3 -m unittest tests/test_reviewbot.py
+      - name: Build ledger, comment and report (runs the base-revision bot from inside its worktree)
+        working-directory: bot
+        run: |
+          python3 -m reviewbot review --base "$BASE_SHA" --head "$HEAD_SHA" \
+            --policy review-policy.json --input demo/MP-2283/review-input.json \
+            --evidence ../evidence --provenance ../evidence/provenance.json --out ../out \
+            --repo "$GITHUB_REPOSITORY" --pr "$PR" --author "$AUTHOR"
+          cp ../out/report.html "../out/decision-review-pr$PR.html"
+      - name: Upload HTML report (single file, opens in browser)
+        id: report
+        uses: actions/upload-artifact@v7
+        with:
+          path: out/decision-review-pr${{ github.event.pull_request.number }}.html
+          archive: false
+          retention-days: 30
+      - name: Upload ledger
+        uses: actions/upload-artifact@v7
+        with:
+          name: decision-ledger
+          path: out/ledger.json
+          retention-days: 30
+      - name: Post sticky comment and pending human-decision status
+        env:
+          REPORT_URL: ${{ steps.report.outputs.artifact-url }}
+        run: |
+          (cd bot && python3 - <<'PY'
+          import json, os, pathlib, sys
+          os.chdir("..")
+          sys.path.insert(0, "bot")
+          from reviewbot import render_md
+          L = json.load(open("out/ledger.json"))
+          body = render_md.render(L, report_url=os.environ["REPORT_URL"], prefix="sample/")
+          pathlib.Path("out/comment-final.md").write_text(body)
+          pathlib.Path("out/payload.json").write_text(json.dumps({"body": body}))
+          PY
+          )
+          cat out/comment-final.md >> "$GITHUB_STEP_SUMMARY"
+          ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- dfr:sticky -->")) | .id' | head -n1)
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" --input out/payload.json > /dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --input out/payload.json > /dev/null
+          fi
+          TIER=$(python3 -c "import json;print(json.load(open('out/ledger.json'))['triage']['tier'])")
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state=pending -f context=decision-record \
+            -f description="$TIER review: awaiting a named human /sign (AI never approves)" -f target_url="$REPORT_URL" > /dev/null

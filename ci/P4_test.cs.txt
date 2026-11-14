@@ -1,0 +1,18 @@
+
+    // Injected by Decision-First Review CI (probe P4 for finding F1). Not part of the upstream change.
+    [Fact]
+    public async Task NullStringKey_PositionalRecord()
+    {
+        string input = Preamble + @"
+[MessagePackObject]
+public record Foo([property: Key(null)] string {|MsgPack005:Member|});
+
+namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
+";
+
+        await new VerifyCS.Test
+        {
+            TestCode = input,
+            MarkupOptions = MarkupOptions.UseFirstDescriptor,
+        }.RunAsync();
+    }

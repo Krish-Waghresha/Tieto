@@ -1,0 +1,89 @@
+{
+  "version": "0.4-demo",
+  "status": "DEMO POLICY — illustrative, not an agreed policy",
+  "owner": "area owners (demo: research track)",
+  "policy_certification": {"last_certified": null, "note": "Periodic sign-off of this policy itself (SEC 15c3-5-style). Not done for the demo."},
+  "tier_order": ["LIGHT", "STANDARD", "DEEP"],
+  "default_tier": "STANDARD",
+  "rules": [
+    {
+      "id": "R-POLICY-FILES",
+      "tier": "DEEP",
+      "kind": "path",
+      "paths": ["review-policy.json", ".github/**", "reviewbot/**", "**/Directory.Build.props", "**/Directory.Packages.props", "**/.editorconfig", "**/*.ruleset", "**/global.json"],
+      "why": "A PR must not change the rules, analyzers or CI that judge it.",
+      "motivated_by": "Red-team review (wave 2): agent edits the rules that judge it; triage always uses base-revision policy."
+    },
+    {
+      "id": "R-DIAG-POLICY",
+      "tier": "DEEP",
+      "kind": "path+pattern",
+      "paths": ["**/CodeAnalysis/**", "**/Analyzers/**", "**/SourceGenerator/**"],
+      "patterns": ["Diagnostic\\.Create", "reportDiagnostic", "ReportDiagnostic"],
+      "why": "Changes to what an analyzer or generator reports change what every user of the library is warned about.",
+      "motivated_by": "MessagePack #2283: a silently missing resolver shipped across two releases. MiFID II RTS 6 Art. 11(1): depth of review proportionate to the change."
+    },
+    {
+      "id": "R-CROSSCUT",
+      "tier": "DEEP",
+      "kind": "fanout",
+      "threshold": 10,
+      "why": "A change to a field or helper used at many call sites alters behavior far beyond the edited lines.",
+      "motivated_by": "Spotify (Oct 2026): change volume outpaced verification controls. Rewind (2026): risk has almost nothing to do with line count."
+    },
+    {
+      "id": "R-PUBLIC-API",
+      "tier": "DEEP",
+      "kind": "pattern",
+      "paths": ["**/src/**"],
+      "added_patterns": ["^\\s*public\\s+(?!.*\\boverride\\b)"],
+      "why": "Public API changes are contracts for downstream users.",
+      "motivated_by": "Common practice (Cloudflare, Adyen): contract changes always reviewed in depth."
+    },
+    {
+      "id": "R-SIZE",
+      "tier": "DEEP",
+      "kind": "size",
+      "max_files": 100,
+      "max_changed_lines": 1000,
+      "why": "Very large PRs exceed effective human review; split or review in depth.",
+      "motivated_by": "Vercel (largest monorepo): 100+ changed files always HIGH. SmartBear/Cisco: effectiveness drops above ~400 LOC."
+    },
+    {
+      "id": "R-DOCS-POLICY",
+      "tier": "STANDARD",
+      "kind": "path",
+      "paths": ["**/*.md"],
+      "why": "Documentation that states behavior must match a decision the reviewer accepts.",
+      "motivated_by": "Gong et al. (MSR 2026): descriptions claiming unimplemented changes are the most common mismatch type in agent PRs."
+    },
+    {
+      "id": "R-TESTS-ADDED",
+      "tier": null,
+      "kind": "required-check",
+      "paths": ["**/tests/**", "**/*Tests.cs"],
+      "check": "fail-on-base / pass-on-head",
+      "why": "Tests written by the authoring agent cannot certify its own work; they must be shown able to fail.",
+      "motivated_by": "Optiver (2026): agents claim success when they haven't — self-certification removed."
+    },
+    {
+      "id": "R-CHANGED-EXPECTATIONS",
+      "tier": "STANDARD",
+      "kind": "modified-test-lines",
+      "paths": ["**/tests/**", "**/*Tests.cs"],
+      "why": "A changed expected value in an existing test can pin wrong behavior.",
+      "motivated_by": "Red-team review (wave 2): tests that pin wrong behavior."
+    }
+  ],
+  "protected_paths": {
+    "paths": ["**/auth/**", "**/crypto/**", "**/Security/**"],
+    "why": "Always a human, whatever the AI says (Rewind protected paths; Cloudflare auth/crypto always full review)."
+  },
+  "light_requires": "whitespace-only or docs-only outside shipped code, and no other rule fires",
+  "signoff": {
+    "ai_counts_toward_required_reviewers": false,
+    "separation_of_duties": "signer must not be the PR author (the agent's operator)",
+    "demo_allow_author_signoff": false,
+    "light_random_rereview_rate": 0.05
+  }
+}

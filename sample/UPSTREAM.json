@@ -1,0 +1,9 @@
+{
+  "note": "Files under sample/ are copied verbatim from the Tieto challenge copy of MessagePack-CSharp (MIT, see sample/LICENSE). The demo PR reproduces the agent-written change from branch ju26-issue-2283.",
+  "repo": "te-industry-tech-office/junction26-messagepack-csharp",
+  "base_sha": "32258fdbee4bcd653c79f51b4376b5103c6f4d27",
+  "head_sha": "9df83c38409c8bfad0517aebffe48211eda4a5b4",
+  "agent_branch": "ju26-issue-2283",
+  "path_prefix": "sample/",
+  "requirement_id": "MP-2283"
+}
