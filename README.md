@@ -22,6 +22,20 @@
 | Brief | sticky PR comment (one screen) + single-file HTML report (graph, cards, evidence, quiz, audio, sign) | rendered from the ledger only |
 | Sign | reviewer submits a **PR review** whose body is the `/sign` text | `decision-sign` workflow validates head SHA, ledger, every item resolved, review state matches, signer ≠ PR author; sets `decision-record` status |
 
+## The review UI (branch `demo/ui`)
+
+A 7-step guided review built with React 19 + React Flow + Shiki, compiled to **one self-contained HTML file** (`reviewbot/static/review-app.template.html`, ~950 KB). The bot injects the ledger (and an optional narrated briefing) and a hash-only CSP — CI needs no Node.
+
+1. **Verdict** — tier, owner, plain-language read, checks run, scope meter (2 needed vs 28 affected), evidence ladder, ≤75 s audio briefing
+2. **What changed** — before/after flow graph built from tool facts; the dropped path is the only accent; click a box for its code
+3. **Decisions** — before/after cards; **your verdict first**, the AI's suggestion unlocks after (reduces over-reliance)
+4. **Found / won't decide** — F1 with its tool facts and the tests that try to disprove it; A1/A2
+5. **Evidence & gaps** — filter by grade; checks, tool facts, every changed block, what was not checked
+6. **Quick check** — 3 questions keyed by tool facts/tests, never a gate
+7. **Sign** — you vs AI, residual risk, generates the `/sign` review text (validated by the same rules as the bot)
+
+Deep links: `report.html#step-3`. Keys: ← →. "Full page" mode shows all steps. Rebuild the UI: `cd ui && npm ci && npm run build`.
+
 ## Try it
 
 1. Open the PR, read the sticky comment, click **full report** (opens the HTML in the browser; repo login required).

@@ -234,6 +234,19 @@ class EscapingTests(unittest.TestCase):
         self.assertEqual(render_md.code("a`b").count("`"), 2)
 
 
+class ReviewAppTests(unittest.TestCase):
+    def test_ledger_cannot_break_out_of_the_page(self):
+        from reviewbot import render_app
+        if not render_app.available():
+            self.skipTest("UI template not built")
+        html = render_app.render({"evil": "</script><img src=x onerror=alert(1)>", "pin": {}}, audio_script="</script>")
+        body = html.split("<body>", 1)[1]
+        self.assertNotIn("<img src=x", body)
+        self.assertEqual(html.count("</script>"), 3)  # app script (head) + ledger + audio data blocks only
+        self.assertIn("Content-Security-Policy", html)
+        self.assertNotIn("unsafe-inline", html)
+
+
 class EndToEndTriageTests(unittest.TestCase):
     """Whole-repo diff: a PR touching CI or policy outside sample/ must be DEEP, never LIGHT."""
 

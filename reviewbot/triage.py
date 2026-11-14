@@ -134,6 +134,7 @@ def run(files: list[FileDiff], policy: dict, sources: dict[str, tuple[str, str]]
                         "count": len(inv),
                         "methods": owners,
                         "lines": [l for l, _ in inv],
+                        "sites": [{"line": l, "method": o} for l, o in inv],
                         "claims": [h.id],
                         "new_rhs": rhs,
                     })

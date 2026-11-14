@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 from . import ledger as ledger_mod
-from . import render_html, render_md, sign
+from . import render_app, render_html, render_md, sign
 
 
 def cmd_review(a) -> int:
@@ -27,7 +27,14 @@ def cmd_review(a) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "ledger.json").write_text(json.dumps(L, indent=2, default=str))
     (out / "comment.md").write_text(render_md.render(L, report_url=a.report_url))
-    (out / "report.html").write_text(render_html.render(L, prefix=a.prefix))
+    basic = render_html.render(L, prefix=a.prefix)
+    (out / "report-basic.html").write_text(basic)
+    if render_app.available():
+        audio_file = Path(a.audio) if a.audio else None
+        (out / "report.html").write_text(render_app.render(L, audio_script=render_html.audio_script(L), audio_file=audio_file))
+    else:
+        (out / "report.html").write_text(basic)
+    (out / "audio-script.txt").write_text(render_html.audio_script(L))
     (out / "REPORT.md").write_text(render_md.render(L, prefix=a.prefix, full=True))
     print(json.dumps({"tier": L["triage"]["tier"], "open_items": L["open_items"], "coverage_complete": L["coverage"]["complete"],
                       "problems": L["problems"], "ledger": L["ledger_sha256"][:12]}))
@@ -84,6 +91,7 @@ def main(argv=None) -> int:
     r.add_argument("--pr", default=None)
     r.add_argument("--author", default="")
     r.add_argument("--report-url", default="")
+    r.add_argument("--audio", default="", help="optional pre-generated briefing (m4a/mp3/ogg) to embed")
     r.set_defaults(fn=cmd_review)
     s = sub.add_parser("sign")
     s.add_argument("--ledger", required=True)

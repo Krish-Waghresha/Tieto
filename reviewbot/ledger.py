@@ -202,6 +202,30 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
             if c in claimed:
                 claimed[c].append(fct["id"])
     unexplained = [h.id for h in hunks if not claimed.get(h.id)]
+
+    # code excerpts for the UI (from the pinned revisions only; rendered as text, never executed)
+    def excerpt(text: str, start: int, length: int, ctx: int = 3, cap: int = 40) -> dict:
+        lines = text.splitlines()
+        lo = max(1, start - ctx)
+        hi = min(len(lines), start + max(length, 1) - 1 + ctx, lo + cap - 1)
+        return {"start": lo, "lines": lines[lo - 1:hi], "focus": [start, start + max(length, 1) - 1]}
+    snippets = {}
+    for f in files:
+        b_txt, h_txt = texts["base"].get(f.path, ""), texts["head"].get(f.path, "")
+        for h in f.hunks:
+            before = excerpt(b_txt, h.old_start if h.old_len else h.old_start + 1, h.old_len) if b_txt else None
+            if before is not None and h.old_len == 0:
+                before["focus"] = [0, -1]  # pure insertion: nothing was here before
+                before["insertion"] = True
+            snippets[h.id] = {"path": f.path, "lang": "csharp" if f.path.endswith(".cs") else "markdown",
+                              "before": before, "after": excerpt(h_txt, h.new_start, h.new_len) if h_txt else None}
+    for fct in facts:
+        if fct["kind"] == "branch" and fct.get("lines"):
+            m_start, m_end = fct["lines"]
+            path = next((p for p, m in head_models.items() if m.by_name(fct["method"])), None)
+            if path:
+                snippets[f"method:{fct['method']}"] = {"path": path, "lang": "csharp", "before": None,
+                                                       "after": excerpt(texts["head"][path], m_start, m_end - m_start + 1, ctx=0)}
     coverage = {
         "hunks": [dict(h.to_dict(), claimed_by=claimed.get(h.id, [])) for h in hunks],
         "unexplained": unexplained,
@@ -304,6 +328,7 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
         "findings": findings,
         "abstentions": abstentions,
         "coverage": coverage,
+        "snippets": snippets,
         "scope": scope,
         "not_checked": review_input.get("not_checked", []),
         "what_to_do": review_input.get("what_to_do", [])[:3],
