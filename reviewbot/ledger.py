@@ -24,7 +24,10 @@ def run_fact_checks(checks: list[dict], texts: dict[str, dict[str, str]], requir
         absent_ok = True
         if c.get("absent_pattern"):
             absent_ok = not any(re.search(c["absent_pattern"], l) for l in src.splitlines())
-        holds = (not hits) if c.get("expect_absent") else (bool(hits) and absent_ok)
+        if not src:
+            holds = None
+        else:
+            holds = (not hits) if c.get("expect_absent") else (bool(hits) and absent_ok)
         out.append({
             "id": c["id"], "kind": "grep", "grade": "PROVEN" if src else "UNSUPPORTED",
             "grade_note": "exact text match on the pinned revision (text-level, not semantic)",
@@ -88,17 +91,19 @@ def check_rule(rule: dict, proof: dict | None) -> bool:
 
 def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_input: dict,
           evidence_dir: Path, provenance: dict | None, pr: dict) -> dict:
-    files = diffparse.parse(diffparse.git_diff(base, head, [prefix] if prefix else None, cwd=repo))
-    for f in files:  # paths relative to the upstream project root
-        if prefix and f.path.startswith(prefix):
+    files = diffparse.parse(diffparse.git_diff(base, head, None, cwd=repo))  # WHOLE repo: policy/CI files are visible
+    for f in files:  # sample files: paths relative to the upstream project root; everything else keeps its repo path
+        f.in_sample = bool(prefix) and f.path.startswith(prefix)
+        f.repo_path = f.path
+        if f.in_sample:
             f.path = f.path[len(prefix):]
             for h in f.hunks:
                 h.path = f.path
     texts = {"base": {}, "head": {}}
     sources = {}
     for f in files:
-        b = diffparse.show(base, prefix + f.path, cwd=repo)
-        h = diffparse.show(head, prefix + f.path, cwd=repo)
+        b = diffparse.show(base, f.repo_path, cwd=repo)
+        h = diffparse.show(head, f.repo_path, cwd=repo)
         texts["base"][f.path], texts["head"][f.path] = b, h
         sources[f.path] = (b, h)
     for chk in review_input.get("fact_checks", []):  # make sure referenced files are loaded
@@ -130,6 +135,14 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
     # [2] proofs
     runs = evidence.load_runs(evidence_dir)
     proofs = evidence.evaluate(review_input.get("proofs", []), runs)
+    if provenance and provenance.get("files"):
+        p0 = {"id": "P0", "title": "Files under review are byte-identical to the upstream agent commit", "grade": "PROVEN",
+              "status": "executed", "result": "HOLDS" if provenance.get("all_match") else "VIOLATED",
+              "note": f"{sum(f['match'] for f in provenance['files'])}/{len(provenance['files'])} files match (sha256)", "claims": [], "tests": []}
+    else:
+        p0 = {"id": "P0", "title": "Files under review are byte-identical to the upstream agent commit", "grade": "PROVEN",
+              "status": "not_executed", "result": "UNSUPPORTED", "note": "Provenance check runs in CI; not executed here.", "claims": [], "tests": []}
+    proofs = [p0] + proofs
     proof_by_id = {p["id"]: p for p in proofs}
 
     hunks = [h for f in files for h in f.hunks]
@@ -161,7 +174,7 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
     for fnd in review_input.get("findings", []):
         confirm = all(check_rule(r, proof_by_id.get(pid)) for pid, r in fnd.get("confirm_if", {}).items())
         disprove = any(check_rule(r, proof_by_id.get(pid)) for pid, r in fnd.get("disprove_if", {}).items())
-        fact_ok = all(fact_by_id.get(x, {}).get("holds", True) for x in fnd.get("facts", []))
+        fact_ok = all(fact_by_id.get(x, {}).get("holds") is True for x in fnd.get("facts", []))
         executed = all(proof_by_id.get(pid, {}).get("status") == "executed" for pid in fnd.get("confirm_if", {}))
         if disprove:
             status, grade = "DISPROVED", "MEASURED"
@@ -205,7 +218,8 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
             ratio = reach / max(live_fixed, 1)
             scope.append({"decision": d["id"], "requirement_sites": live_fixed, "reach": reach, "ratio": round(ratio, 1),
                           "mismatch": ratio >= 3, "grade": "HEURISTIC",
-                          "text": f"Requirement needs {live_fixed} crash sites fixed; {d['id']} changes behaviour at {reach} call sites ({ratio:.0f}×)."})
+                          "text": f"The requirement asks to fix {live_fixed} crashing lookups. {d['id']} changes how all {reach} diagnostic call sites behave "
+                                  f"({ratio:.0f}× wider than the fix needs)."})
 
     # tier: coverage gaps and scope mismatches raise it (never lower)
     tier = tri.tier
@@ -225,8 +239,10 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
                 qq["key_grade"] = "HEURISTIC"
         elif q.get("kind") == "line":
             qq["options"] = [h.id for h in hunks if h.path.endswith(".cs") and "/tests/" not in "/" + h.path][:5]
-            qq["answer"] = qq["options"].index(q["answer"]) if q["answer"] in qq["options"] else 0
-            qq["key_grade"] = "PROVEN"
+            fan = next((f for f in facts if f["kind"] == "fanout"), None)
+            key = fan["claims"][0] if fan and fan.get("claims") else q["answer"]
+            qq["answer"] = qq["options"].index(key) if key in qq["options"] else 0
+            qq["key_grade"] = fan["grade"] if fan else "ARGUED"
         elif q.get("answer_from_proof"):
             p = proof_by_id.get(q["answer_from_proof"])
             if p and p.get("status") == "executed":
@@ -236,11 +252,21 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
                 else:
                     qq["answer"] = next((i for s, i in q["answer_rule"].items() if s in msgs), q["fallback_answer"])
                 qq["key_grade"] = "MEASURED"
+                qq["explain"] = "From the executed probe on the old code (P4b)."
             else:
                 qq["answer"] = q["fallback_answer"]
                 qq["key_grade"] = "ARGUED"
-                qq["key_note"] = "Answer key not yet backed by an executed probe."
+                qq["explain"] = "Expected from reading the code; the probe on the old code (P4b) has not run yet, so this key is AI reasoning."
         quiz.append(qq)
+
+    for rc in tri.required_checks:
+        if rc["rule"] == "R-TESTS-ADDED":
+            p1, p2 = proof_by_id.get("P1"), proof_by_id.get("P2")
+            if p1 and p2 and p1.get("status") == p2.get("status") == "executed":
+                rc["status"] = "HOLDS" if p1["result"] == p2["result"] == "HOLDS" else "VIOLATED"
+            else:
+                rc["status"] = "NOT RUN"
+            rc["proofs"] = ["P1", "P2"]
 
     # verdict
     open_items = [d["id"] for d in decisions if d.get("recommended") not in ("accept",) and not str(d.get("recommended", "")).startswith("follow_")] \
@@ -268,7 +294,8 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
             "requirement_sha256": _sha(requirement),
         },
         "requirement": {"id": review_input["requirement_id"], "file": review_input.get("requirement_file"),
-                        "acceptance_criteria": review_input.get("acceptance_criteria", {})},
+                        "acceptance_criteria": review_input.get("acceptance_criteria", {}),
+                        "trace": review_input.get("acceptance_criteria_trace", {})},
         "provenance_note": review_input.get("provenance", {}),
         "triage": dict(tri.to_dict(), tier=tier, base_tier=tri.tier),
         "facts": facts,
@@ -285,7 +312,10 @@ def build(*, repo: str, base: str, head: str, prefix: str, policy: dict, review_
         "open_items": open_items,
         "dependent_items": dependent_items,
         "problems": problems,
-        "files": [{"path": f.path, "status": f.status, "added": f.added, "removed": f.removed, "hunks": len(f.hunks)} for f in files],
+        "files": [{"path": f.path, "repo_path": f.repo_path, "in_sample": f.in_sample, "binary": f.binary, "status": f.status,
+                   "added": f.added, "removed": f.removed, "hunks": len(f.hunks)} for f in files],
+        "summary": review_input.get("summary", ""),
+        "owners": policy.get("owners", []),
         "signoff_policy": policy.get("signoff", {}),
     }
     ledger["ledger_sha256"] = _sha(json.dumps({k: v for k, v in ledger.items() if k != "ledger_sha256"}, sort_keys=True, default=str))

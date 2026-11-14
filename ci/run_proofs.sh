@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Runs the executable proofs for the demo PR against the upstream repository (untrusted code: CI sandbox only).
-# Usage: ci/run_proofs.sh <upstream-dir> <evidence-dir>
+# Usage: ci/run_proofs.sh <upstream-dir> <evidence-dir> [pr-head-sha]
+# Runs from the BASE checkout: pinned upstream SHAs come from the base's sample/UPSTREAM.json; PR files are read as data.
 set -uo pipefail
-UP="$1"; EV="$2"; HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/.." && pwd)"
-BASE=$(python3 -c "import json;print(json.load(open('$ROOT/sample/UPSTREAM.json'))['base_sha'])")
-HEAD=$(python3 -c "import json;print(json.load(open('$ROOT/sample/UPSTREAM.json'))['head_sha'])")
+UP="$1"; EV="$2"; PR_HEAD="${3:-HEAD}"; HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/.." && pwd)"
+BASE=$(python3 -I -c "import json;print(json.load(open('$ROOT/sample/UPSTREAM.json'))['base_sha'])")
+HEAD=$(python3 -I -c "import json;print(json.load(open('$ROOT/sample/UPSTREAM.json'))['head_sha'])")
 PROJ=tests/MessagePack.SourceGenerator.Tests
 GEN_TESTS=$PROJ/GenericsFormatterTests.cs
 ANA_TESTS=$PROJ/MsgPack00xAnalyzerTests.cs
@@ -13,7 +14,7 @@ SDK=$(dotnet --version 2>/dev/null || echo "missing")
 RUN_URL="${GITHUB_SERVER_URL:-}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}"
 
 inject_p4() {  # insert the probe test before the final closing brace of the test class
-  python3 - "$UP/$ANA_TESTS" "$HERE/P4_test.cs.txt" <<'PY'
+  python3 -I - "$UP/$ANA_TESTS" "$HERE/P4_test.cs.txt" <<'PY'
 import sys
 p, t = sys.argv[1], open(sys.argv[2]).read()
 s = open(p, encoding="utf-8-sig").read()
@@ -23,7 +24,7 @@ PY
 }
 
 meta() {  # run-name rev command exit
-  python3 - "$EV/$1/meta.json" "$2" "$3" "$4" "$SDK" "$RUN_URL" <<'PY'
+  python3 -I - "$EV/$1/meta.json" "$2" "$3" "$4" "$SDK" "$RUN_URL" <<'PY'
 import json, sys, os
 os.makedirs(os.path.dirname(sys.argv[1]), exist_ok=True)
 json.dump({"rev": sys.argv[2], "command": sys.argv[3], "exit_code": int(sys.argv[4]), "sdk": sys.argv[5], "log_url": sys.argv[6]}, open(sys.argv[1], "w"))
@@ -31,16 +32,18 @@ PY
 }
 
 # P0 provenance: the files under review in the PR are byte-identical to the upstream agent commit
-python3 - "$ROOT" "$UP" "$HEAD" "$EV/provenance.json" <<'PY'
+python3 -I - "$ROOT" "$UP" "$HEAD" "$EV/provenance.json" "$PR_HEAD" <<'PY'
 import hashlib, json, subprocess, sys, pathlib
-root, up, head, out = sys.argv[1:]
+root, up, head, out, pr_head = sys.argv[1:]
 files = []
-for p in sorted(pathlib.Path(root, "sample").rglob("*")):
-    rel = p.relative_to(pathlib.Path(root, "sample")).as_posix()
-    if p.is_dir() or rel in ("UPSTREAM.json",):
+names = subprocess.run(["git", "-C", root, "ls-tree", "-r", "--name-only", pr_head, "--", "sample/"], capture_output=True, text=True).stdout.split()
+for name in sorted(names):
+    rel = name[len("sample/"):]
+    if rel in ("UPSTREAM.json", "LICENSE"):
         continue
+    pr_bytes = subprocess.run(["git", "-C", root, "show", f"{pr_head}:{name}"], capture_output=True).stdout
     upstream = subprocess.run(["git", "-C", up, "show", f"{head}:{rel}"], capture_output=True).stdout
-    files.append({"path": rel, "pr_sha256": hashlib.sha256(p.read_bytes()).hexdigest(),
+    files.append({"path": rel, "pr_sha256": hashlib.sha256(pr_bytes).hexdigest(),
                   "upstream_sha256": hashlib.sha256(upstream).hexdigest()})
 for f in files:
     f["match"] = f["pr_sha256"] == f["upstream_sha256"]
@@ -50,7 +53,7 @@ print("provenance all_match:", all(f["match"] for f in files))
 PY
 
 # Run A: base code + the agent's new tests + probe P4  (P2, P4b)
-git -C "$UP" checkout -q -f "$BASE" && git -C "$UP" clean -qfdx -e '**/bin/' -e '**/obj/'
+git -C "$UP" checkout -q -f "$BASE"
 git -C "$UP" show "$HEAD:$GEN_TESTS" > "$UP/$GEN_TESTS"
 inject_p4
 CMD="dotnet test $PROJ -f net8.0 --filter \"FullyQualifiedName~FromMetadataReference|FullyQualifiedName~NullStringKey_PositionalRecord\""

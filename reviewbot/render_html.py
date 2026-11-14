@@ -132,6 +132,13 @@ def render(ledger: dict, prefix: str = "") -> str:
     for w in ledger["what_to_do"]:
         H.append(f"<li>{e(w['text'])} " + " ".join(f'<a href="#{e(r)}" class="ref">{e(r)}</a>' for r in w["refs"]) + "</li>")
     H.append('<li>Answer the <a href="#quiz">3 quick questions</a>, then <a href="#sign">sign</a>.</li></ol>')
+    s_ = ledger.get("summary") or {}
+    if s_:
+        H.append(f'<p class="callout"><b>What this PR does:</b> {e(s_.get("what", ""))}<br><b>Bot\'s read:</b> {e(s_.get("verdict", ""))}<br>'
+                 f'<b>Who decides:</b> <code>{e((ledger.get("owners") or [{"owner": "area owner"}])[0]["owner"])}</code> (area owner) — not the PR author, not the AI.</p>')
+    ran = [p for p in ledger["proofs"] if p.get("status") == "executed"]
+    H.append(f'<p class="callout {"risk" if not ran else ""}"><b>Checks run: {len(ran)} of {len(ledger["proofs"])}</b>'
+             + (" — nothing executed yet; below is tool facts and AI reasoning." if not ran else "") + "</p>")
     H.append(f'<h3>Evidence at a glance</h3>{grade_bar(ledger["grade_counts"])}')
     for s in ledger["scope"]:
         if s["mismatch"]:
@@ -147,7 +154,7 @@ def render(ledger: dict, prefix: str = "") -> str:
                  f'<td>{e(f["detail"])} {chip(f["grade"])}</td><td>{e(f["why"])}<br><small>{e(f["motivated_by"])}</small></td></tr>')
     for r in t["required_checks"]:
         H.append(f'<tr><td><code>{e(r["rule"])}</code></td><td>required check</td><td>{e(len(r["files"]))} test file(s)</td>'
-                 f'<td>{e(r["check"])}</td><td>{e(r["why"])}<br><small>{e(r["motivated_by"])}</small></td></tr>')
+                 f'<td>{e(r["check"])} — <b>{e(r.get("status", "NOT RUN"))}</b> ({e(", ".join(r.get("proofs", [])))})</td><td>{e(r["why"])}<br><small>{e(r["motivated_by"])}</small></td></tr>')
     H.append("</table></section>")
 
     # graph
@@ -167,7 +174,8 @@ def render(ledger: dict, prefix: str = "") -> str:
 <p><b>Why (agent):</b> {e(d["rationale"])} · <b>Requirement:</b> {e(d["trace"]["status"])} {e(", ".join(d["trace"]["to"]))}</p>
 <table class="dims">{dims}</table>
 <p><b>Alternatives:</b> {e("; ".join(d["alternatives"]))} · <b>Evidence:</b> {ev}</p>
-<fieldset class="verdict" data-id="{e(d["id"])}"><legend>Your verdict on {e(d["id"])}</legend>
+{('<p class="callout">Follows <a class="ref" href="#' + e(d["recommended"][7:]) + '">' + e(d["recommended"][7:]) + '</a> — no separate verdict needed.</p>') if str(d.get("recommended","")).startswith("follow_") else ""}
+<fieldset class="verdict" data-id="{e(d["id"])}" {"hidden" if str(d.get("recommended","")).startswith("follow_") else ""}><legend>Your verdict on {e(d["id"])}</legend>
 <label><input type="radio" name="v-{e(d["id"])}" value="accept"> accept</label>
 <label><input type="radio" name="v-{e(d["id"])}" value="request_change"> request change</label>
 <label><input type="radio" name="v-{e(d["id"])}" value="reject"> reject</label></fieldset>
@@ -195,7 +203,7 @@ def render(ledger: dict, prefix: str = "") -> str:
     H.append("</section>")
 
     # evidence
-    H.append('<section id="evidence"><h2>Evidence ledger</h2><h3>Proofs (executed checks)</h3>'
+    H.append('<section id="evidence"><h2>Evidence record</h2><h3>Proofs (executed checks)</h3>'
              '<table><tr><th>ID</th><th>Check</th><th>Status</th><th>Result</th><th>Detail</th></tr>')
     for p in ledger["proofs"]:
         st = "executed" if p.get("status") == "executed" else "not executed here"
@@ -212,19 +220,19 @@ def render(ledger: dict, prefix: str = "") -> str:
     H.append('</table><h3>Facts (deterministic)</h3><table><tr><th>ID</th><th>Fact</th><th>Grade</th><th>Holds</th><th>Lines</th></tr>')
     for f in ledger["facts"]:
         H.append(f'<tr><td><code>{e(f["id"])}</code></td><td>{e(f["text"])}<br><small>{e(f.get("grade_note", ""))}</small></td>'
-                 f'<td>{chip(f["grade"])}</td><td>{e({True: "yes", False: "no", None: "—"}[f.get("holds")])}</td><td>{e(str(f.get("lines", ""))[:60])}</td></tr>')
+                 f'<td>{chip(f["grade"])}</td><td>{e({True: "yes", False: "no", None: "n/a (measurement)"}[f.get("holds")])}</td><td>{e(str(f.get("lines", ""))[:60])}</td></tr>')
     H.append("</table></section>")
 
     # coverage
-    H.append('<section id="coverage"><h2>Coverage — is every change explained?</h2><table><tr><th>Hunk</th><th>+/−</th><th>Explained by</th></tr>')
+    H.append('<section id="coverage"><h2>Coverage — is every changed block explained?</h2><table><tr><th>Changed block</th><th>+/−</th><th>Explained by</th></tr>')
     for h in ledger["coverage"]["hunks"]:
         cb = " ".join(f'<a class="ref" href="#{e(x)}">{e(x)}</a>' for x in h["claimed_by"]) or '<b class="bad">UNEXPLAINED</b>'
         H.append(f'<tr><td>{src_link(h["id"])}</td><td>+{h["added"]} / −{h["removed"]}</td><td>{cb}</td></tr>')
-    status = "✅ every changed hunk is claimed by a decision, finding or fact" if ledger["coverage"]["complete"] else "❌ unexplained changes raise the tier"
+    status = "Every changed block is assigned to a decision, finding or tool fact (assignment by the simulated extractor)" if ledger["coverage"]["complete"] else "❌ unexplained changes raise the tier"
     H.append(f'</table><p>{status}</p><h3>Not checked</h3><ul>' + "".join(f"<li>{e(x)}</li>" for x in ledger["not_checked"]) + "</ul></section>")
 
     # quiz
-    H.append('<section id="quiz"><h2>Quick check (3 questions, does not block merge)</h2>'
+    H.append('<section id="quiz"><h2>Quick check (3 questions + 1 free text, does not block merge)</h2>'
              '<p>Answer keys come from deterministic facts or executed probes, never from the AI. Your score goes into the signed record.</p><form id="quizform">')
     for q in ledger["quiz"]:
         H.append(f'<fieldset class="q" data-id="{e(q["id"])}" data-answer="{e(q.get("answer", ""))}"><legend>{e(q["id"])}. {e(q["question"])}</legend>')
@@ -240,7 +248,7 @@ def render(ledger: dict, prefix: str = "") -> str:
 
     # audio
     script = audio_script(ledger)
-    H.append(f'<section id="audio"><h2>Listen (≈1 min)</h2><p class="callout">Synthesized from the ledger by template — <b>not evidence</b>. '
+    AUDIO = (f'<section id="audio"><h2>Listen (≈1 min)</h2><p class="callout">Synthesized from the ledger by template — <b>not evidence</b>. '
              f'Uses your browser\'s speech engine; nothing is uploaded.</p><button type="button" id="play">▶ Play briefing</button> '
              f'<button type="button" id="stop">■ Stop</button><details><summary>Transcript</summary><p id="audiotext">{e(script)}</p></details></section>')
 
@@ -253,9 +261,11 @@ The AI never signs and never counts as a reviewer.</p>
 <label class="block">Residual risk you accept <textarea id="risk" rows="2" maxlength="500"></textarea></label>
 <button type="button" id="gensign">Generate /sign text</button> <button type="button" id="copysign">Copy</button>
 <pre id="signout" aria-live="polite">(enable JavaScript to generate)</pre></section>''')
+    H.append(AUDIO)
 
     data = json.dumps({"head": head, "ledger": ledger["ledger_sha256"][:12],
-                       "items": [d["id"] for d in ledger["decisions"]] + [f["id"] for f in ledger["findings"]] + [a["id"] for a in ledger["abstentions"]],
+                       "items": [d["id"] for d in ledger["decisions"] if not str(d.get("recommended", "")).startswith("follow_")]
+                                + [f["id"] for f in ledger["findings"]] + [a["id"] for a in ledger["abstentions"]],
                        "audio": script}).replace("</", "<\\/")
     csp = f"default-src 'none'; img-src data:; style-src {csp_hash(css)}; script-src {csp_hash(js)}; base-uri 'none'; form-action 'none'"
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'

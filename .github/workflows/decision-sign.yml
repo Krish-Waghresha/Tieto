@@ -1,6 +1,10 @@
 name: decision-sign
-# Validates a `/sign` PR *review* against the latest ledger for the PR head and records the human decision.
-# Signing through a real GitHub review ties the record to a platform approval / change request.
+# Validates a `/sign` PR *review* against the evidence record for the exact PR head and records the human decision.
+#
+# KNOWN LIMITATION (documented, not hidden): GitHub runs `pull_request_review` workflows from the PR merge ref, so a
+# malicious same-repo PR could edit this file. `issue_comment`/`workflow_run` alternatives only run from the default
+# branch. Production design: a GitHub App (or default-branch workflow_run) sets the status, plus a ruleset/CODEOWNERS
+# protecting .github/**, reviewbot/** and review-policy.json — and triage already forces DEEP on any change to them.
 on:
   pull_request_review:
     types: [submitted]
@@ -21,56 +25,30 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      AUTHOR: ${{ github.event.pull_request.user.login }}
       SIGNER: ${{ github.event.review.user.login }}
+      ASSOC: ${{ github.event.review.author_association }}
       BODY: ${{ github.event.review.body }}
       REVIEW_STATE: ${{ github.event.review.state }}
     steps:
-      - name: Resolve PR head, base and author
-        id: pr
-        run: |
-          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq '"head=\(.head.sha)\nbase=\(.base.sha)\nauthor=\(.user.login)"' >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
-          ref: ${{ steps.pr.outputs.base }}
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - name: Fetch the ledger built for this exact head
-        env:
-          HEAD_SHA: ${{ steps.pr.outputs.head }}
+      - name: Fetch the evidence record built for this exact head (newest artifact by name)
         run: |
-          RUN=$(gh run list -R "$GITHUB_REPOSITORY" --workflow decision-review.yml --commit "$HEAD_SHA" --json databaseId,conclusion \
-                --jq '[.[] | select(.conclusion=="success")][0].databaseId')
-          test -n "$RUN" || { echo "no successful review run for $HEAD_SHA"; exit 1; }
-          gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n decision-ledger -D ledger
+          ART=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=decision-ledger-$HEAD_SHA&per_page=1" --jq '.artifacts[0].id // empty')
+          test -n "$ART" || { echo "no evidence record for head $HEAD_SHA — the review bot has not finished"; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ART/zip" > ledger.zip
+          mkdir -p ledger && unzip -q -o ledger.zip -d ledger
       - name: Validate and record
-        env:
-          HEAD_SHA: ${{ steps.pr.outputs.head }}
-          AUTHOR: ${{ steps.pr.outputs.author }}
         run: |
           printf '%s' "$BODY" > body.txt
+          AUTHORS=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/commits" --paginate --jq '.[].author.login // empty' | sort -u | paste -sd, -)
           mkdir -p out
           python3 -m reviewbot sign --ledger ledger/ledger.json --body-file body.txt --signer "$SIGNER" \
-            --head "$HEAD_SHA" --author "$AUTHOR" --review-state "$REVIEW_STATE" --out out/sign-result.json
-          python3 - <<'PY'
-          import json, os
-          r = json.load(open("out/sign-result.json"))
-          rec = r.get("record", {})
-          if r["ok"]:
-              head = f"### ✍️ Decision recorded: **{rec['decision'].replace('_', ' ')}** by @{os.environ['SIGNER']}"
-          else:
-              head = f"### ⛔ Sign-off rejected for @{os.environ['SIGNER']}"
-          lines = [head, ""]
-          lines += [f"- ❌ {e}" for e in r["errors"]] + [f"- ⚠️ {w}" for w in r["warnings"]]
-          if rec:
-              lines += ["", "<details><summary>Decision record (JSON, sha256 " + rec["record_sha256"][:12] + ")</summary>", "",
-                        "```json", json.dumps(rec, indent=2), "```", "", "</details>"]
-          lines += ["", "<sub>The AI never signs. Signature: GitHub identity of the commenter (Sigstore/in-toto attestation proposed).</sub>"]
-          json.dump({"body": "\n".join(lines)}, open("out/reply.json", "w"))
-          state = "error" if not r["ok"] else ("success" if rec["decision"] == "approve" else "failure")
-          desc = ("Rejected sign-off: " + r["errors"][0])[:139] if not r["ok"] else f"{rec['decision']} signed by {os.environ['SIGNER']}"[:139]
-          import shlex
-          open("out/status.env", "w").write(f"STATE={shlex.quote(state)}\nDESC={shlex.quote(desc)}\n")
-          PY
+            --head "$HEAD_SHA" --author "$AUTHOR" --review-state "$REVIEW_STATE" --association "$ASSOC" \
+            --commit-authors "$AUTHORS" --pr "$PR" --out out/sign-result.json --reply out/reply.json --status out/status.json
           gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --input out/reply.json > /dev/null
-          . out/status.env
-          [ "$STATE" = "error" ] && STATE=pending
-          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" -f state="$STATE" -f context=decision-record -f description="$DESC" > /dev/null
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" --input out/status.json > /dev/null

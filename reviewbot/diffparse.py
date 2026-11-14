@@ -41,7 +41,10 @@ class Hunk:
         }
 
     def whitespace_only(self) -> bool:
-        norm = lambda lines: [re.sub(r"\s+", "", l) for l in lines if l.strip()]
+        """Only leading/trailing whitespace or blank lines changed. Never for indentation-sensitive files."""
+        if self.path.endswith((".py", ".yml", ".yaml", ".mk", "Makefile")):
+            return False
+        norm = lambda lines: [l.strip() for l in lines if l.strip()]
         return norm(self.removed) == norm(self.added)
 
 
@@ -50,6 +53,7 @@ class FileDiff:
     path: str
     status: str  # A, M, D
     hunks: list[Hunk] = field(default_factory=list)
+    binary: bool = False
 
     @property
     def added(self) -> int:
@@ -61,7 +65,7 @@ class FileDiff:
 
 
 def git_diff(base: str, head: str, paths: list[str] | None = None, cwd: str = ".") -> str:
-    cmd = ["git", "diff", "--no-color", "--no-ext-diff", "-U0", f"{base}..{head}", "--"]
+    cmd = ["git", "-c", "core.quotePath=false", "diff", "--no-color", "--no-ext-diff", "--no-renames", "-U0", f"{base}..{head}", "--"]
     cmd += paths or []
     return subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, text=True).stdout
 
@@ -82,6 +86,8 @@ def parse(diff_text: str) -> list[FileDiff]:
             cur.status = "A"
         elif line.startswith("deleted file mode"):
             cur.status = "D"
+        elif line.startswith("Binary files ") or line.startswith("old mode") or line.startswith("new mode"):
+            cur.binary = cur.binary or line.startswith("Binary files ")
         elif line.startswith("@@"):
             m = HUNK_RE.match(line)
             if not m:

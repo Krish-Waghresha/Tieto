@@ -7,7 +7,7 @@
 ## The real case
 
 - **Requirement:** [MP-2283](requirements/MP-2283.md) — MessagePack-CSharp issue #2283 (generator/analyzer crash on closed generic value types from a referenced assembly).
-- **Agent change:** the challenge's branch `ju26-issue-2283` (commit `9df83c38`) of `te-industry-tech-office/junction26-messagepack-csharp`, reproduced as PR **`demo/agent-2283` → `demo/base`** in this repo. Files under `sample/` are verbatim copies (MIT, see `sample/LICENSE`); CI proves byte-identity (P0).
+- **Agent change:** the challenge's branch `ju26-issue-2283` (commit `9df83c38`) of `te-industry-tech-office/junction26-messagepack-csharp`, reproduced as PR **`demo/agent-2283` → `demo/base`** in this repo. Files under `sample/` are verbatim copies (MIT, see `sample/LICENSE`); proof P0 checks byte-identity in CI (verified locally by sha256 during setup).
 
 ## What happens on the PR
 
@@ -16,7 +16,7 @@
 | Pin | base/head SHAs, policy hash, upstream SHAs, requirement hash | recorded in the ledger |
 | Triage | `review-policy.json` rules → LIGHT / STANDARD / DEEP; every rule cites the incident or regulation behind it | plain, unit-tested code (`reviewbot/triage.py`); **base-revision** bot and policy |
 | Facts | fan-out of changed delegates, branch shape of new methods, requirement anchors, precedent checks | deterministic text-level parse (graded HEURISTIC/PROVEN; Roslyn proposed) |
-| Proofs | P1 new tests pass on head · P2 same tests fail on base · P3 whole generator suite on head · P4 probe for finding F1 on base and head · P0 provenance | **executed** in GitHub Actions on the upstream repo (`ci/run_proofs.sh`) |
+| Proofs | P0 provenance · P1 new tests pass on head · P2 same tests fail on base · P3 whole generator suite on head · P4 probe for finding F1 on base and head | **designed to execute** in GitHub Actions on the upstream repo (`ci/run_proofs.sh`). **Current status: not executed** — Actions is not enabled on this repo yet |
 | Decisions | D1–D4, finding F1, abstentions A1–A2 | **SIMULATED** extractor output (`demo/MP-2283/review-input.json`) — stand-in for an LLM pass; every claim must cite hunk/fact/proof IDs and numbers are filled from facts |
 | Coverage | every changed hunk must be explained; scope fan-out check | deterministic |
 | Brief | sticky PR comment (one screen) + single-file HTML report (graph, cards, evidence, quiz, audio, sign) | rendered from the ledger only |
@@ -38,7 +38,9 @@ open out/report.html
 
 ## Honest labels
 
-- **Executed:** triage, facts, coverage, unit tests, proofs P0–P4 (in CI).
+- **Executed:** triage, tool facts, coverage, unit tests (41). Proofs P0–P4 are wired but **not yet executed** (Actions disabled on this repo).
 - **Simulated:** decision extraction text (no model connected); graph layout is hand-designed around deterministic facts.
 - **Proposed, not built:** Roslyn-based facts, Sigstore/in-toto signing, mutation testing, cross-model reviewer, per-area trust tracking, canaries.
-- **Limits:** text-level C# parsing; one sample change; workflow files come from the PR merge ref for `pull_request` events (production would use a GitHub App so the PR cannot alter its own pipeline).
+- **Security model:** the review runs on `pull_request_target` from the **base** branch (workflow, bot, policy, proof script, pinned SHAs); PR files are read as data only; proofs run with a read-only token. Triage diffs the whole repo, so changes to `.github/**`, `reviewbot/**` or `review-policy.json` force a deep review.
+- **Known limitation:** the `/sign` workflow uses `pull_request_review`, which GitHub runs from the PR merge ref — a malicious same-repo PR could alter it. Production: GitHub App or default-branch `workflow_run`, plus a ruleset protecting the pipeline files.
+- **Other limits:** text-level C# parsing; one sample change.

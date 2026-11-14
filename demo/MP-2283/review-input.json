@@ -12,111 +12,303 @@
     "pr_description_used_for_extraction": false,
     "note": "Pass 1 extraction is blind to the PR text and session log (avoids adopting the agent's story)."
   },
-
   "fact_checks": [
-    {"id": "FACT-REQ-ANCHOR", "kind": "grep", "rev": "requirement", "pattern": "DeclaringSyntaxReferences\\[0\\]",
-     "text": "The requirement names the `DeclaringSyntaxReferences[0]` lookups as the crash site."},
-    {"id": "FACT-BASE-SITES", "kind": "grep", "rev": "base", "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs", "pattern": "DeclaringSyntaxReferences\\[0\\]",
-     "text": "Occurrences of `DeclaringSyntaxReferences[0]` in the base file (including commented-out code)."},
-    {"id": "FACT-HEAD-SITES-LIVE", "kind": "grep", "rev": "head", "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs", "pattern": "^(?!\\s*//).*DeclaringSyntaxReferences\\[0\\]", "expect_absent": true,
-     "text": "Live (non-comment) `DeclaringSyntaxReferences[0]` lookups left in the head file."},
-    {"id": "FACT-PRECEDENT-PARAMSYNTAX", "kind": "grep", "rev": "base", "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs", "pattern": "as ParameterSyntax",
-     "text": "The base file already handles positional-record parameters (`as ParameterSyntax`)."},
-    {"id": "FACT-HELPER-SHAPE", "kind": "grep", "rev": "head", "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs", "pattern": "GetPropertyIdentifierLocation\\(IPropertySymbol.*PropertyDeclarationSyntax", "absent_pattern": "GetPropertyIdentifierLocation\\(IPropertySymbol.*ParameterSyntax",
-     "text": "The new helper `GetPropertyIdentifierLocation` matches only `PropertyDeclarationSyntax`, not `ParameterSyntax`."},
-    {"id": "FACT-SKIP-GENERATED", "kind": "grep", "rev": "head", "path": "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs", "pattern": "SkipGeneratedSourcesCheck",
-     "text": "A new test skips the generated-source comparison."}
+    {
+      "id": "FACT-REQ-ANCHOR",
+      "kind": "grep",
+      "rev": "requirement",
+      "pattern": "DeclaringSyntaxReferences\\[0\\]",
+      "text": "The requirement names the `DeclaringSyntaxReferences[0]` lookups as the crash site."
+    },
+    {
+      "id": "FACT-BASE-SITES",
+      "kind": "grep",
+      "rev": "base",
+      "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs",
+      "pattern": "DeclaringSyntaxReferences\\[0\\]",
+      "text": "`DeclaringSyntaxReferences[0]` occurrences in the old code (one of them is commented-out dead code)."
+    },
+    {
+      "id": "FACT-HEAD-SITES-LIVE",
+      "kind": "grep",
+      "rev": "head",
+      "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs",
+      "pattern": "^(?!\\s*//).*DeclaringSyntaxReferences\\[0\\]",
+      "expect_absent": true,
+      "text": "No live (non-comment) `DeclaringSyntaxReferences[0]` lookups remain in the new code."
+    },
+    {
+      "id": "FACT-PRECEDENT-PARAMSYNTAX",
+      "kind": "grep",
+      "rev": "base",
+      "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs",
+      "pattern": "as ParameterSyntax",
+      "text": "The base file already handles positional-record parameters (`as ParameterSyntax`)."
+    },
+    {
+      "id": "FACT-HELPER-SHAPE",
+      "kind": "grep",
+      "rev": "head",
+      "path": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs",
+      "pattern": "GetPropertyIdentifierLocation\\(IPropertySymbol.*PropertyDeclarationSyntax",
+      "absent_pattern": "GetPropertyIdentifierLocation\\(IPropertySymbol.*ParameterSyntax",
+      "text": "The new helper `GetPropertyIdentifierLocation` matches only `PropertyDeclarationSyntax`, not `ParameterSyntax`."
+    },
+    {
+      "id": "FACT-SKIP-GENERATED",
+      "kind": "grep",
+      "rev": "head",
+      "path": "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs",
+      "pattern": "SkipGeneratedSourcesCheck",
+      "text": "A new test skips the generated-source comparison."
+    }
   ],
-
   "proofs": [
-    {"id": "P1", "title": "New metadata-reference tests pass on head", "run": "head", "filter": "FromMetadataReference", "expect": "all_pass", "grade": "MEASURED",
-     "claims": ["tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L499"], "supports": ["D2", "AC1"]},
-    {"id": "P2", "title": "The same tests fail on base (they can detect the bug — no self-certification)", "run": "base-with-head-tests", "filter": "FromMetadataReference", "expect": "any_fail", "grade": "MEASURED",
-     "claims": ["tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L499"], "supports": ["D2", "AC1"]},
-    {"id": "P3", "title": "Whole generator test suite passes on head (golden outputs unchanged for the test corpus)", "run": "head", "filter": ".", "exclude": "PositionalRecord", "expect": "all_pass", "grade": "MEASURED",
-     "claims": [], "supports": ["AC3"], "limit": "Bounded to the inputs in the test corpus; golden files cover generated code, not diagnostics."},
-    {"id": "P4b", "title": "Finding F1 probe on base: positional record with [property: Key(null)]", "run": "base-with-head-tests", "filter": "NullStringKey_PositionalRecord", "expect": "observe", "grade": "MEASURED",
-     "claims": [], "supports": ["F1"]},
-    {"id": "P4h", "title": "Finding F1 probe on head: positional record with [property: Key(null)]", "run": "head", "filter": "NullStringKey_PositionalRecord", "expect": "observe", "grade": "MEASURED",
-     "claims": [], "supports": ["F1"]}
+    {
+      "id": "P1",
+      "title": "New metadata-reference tests pass on head",
+      "run": "head",
+      "filter": "FromMetadataReference",
+      "expect": "all_pass",
+      "grade": "MEASURED",
+      "claims": [
+        "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L499"
+      ],
+      "supports": [
+        "D2",
+        "AC1"
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "The same tests fail on base (they can detect the bug — no self-certification)",
+      "run": "base-with-head-tests",
+      "filter": "FromMetadataReference",
+      "expect": "any_fail",
+      "grade": "MEASURED",
+      "claims": [
+        "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L499"
+      ],
+      "supports": [
+        "D2",
+        "AC1"
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "Whole generator test suite passes on head (golden outputs unchanged for the test corpus)",
+      "run": "head",
+      "filter": ".",
+      "exclude": "PositionalRecord",
+      "expect": "all_pass",
+      "grade": "MEASURED",
+      "claims": [],
+      "supports": [
+        "AC3"
+      ],
+      "limit": "Bounded to the inputs in the test corpus; golden files cover generated code, not diagnostics."
+    },
+    {
+      "id": "P4b",
+      "title": "Finding F1 probe on base: positional record with [property: Key(null)]",
+      "run": "base-with-head-tests",
+      "filter": "NullStringKey_PositionalRecord",
+      "expect": "observe",
+      "grade": "MEASURED",
+      "claims": [],
+      "supports": [
+        "F1"
+      ]
+    },
+    {
+      "id": "P4h",
+      "title": "Finding F1 probe on head: positional record with [property: Key(null)]",
+      "run": "head",
+      "filter": "NullStringKey_PositionalRecord",
+      "expect": "observe",
+      "grade": "MEASURED",
+      "claims": [],
+      "supports": [
+        "F1"
+      ]
+    }
   ],
-
   "decisions": [
     {
       "id": "D1",
       "title": "Drop every diagnostic whose location is not in this compilation",
-      "claims": ["src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L239", "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1429"],
-      "facts": ["FACT-FANOUT-reportDiagnostic", "FACT-BRANCH-ReportIfLocatedInCompilation"],
+      "claims": [
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L239",
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1429"
+      ],
+      "facts": [
+        "FACT-FANOUT-reportDiagnostic",
+        "FACT-BRANCH-ReportIfLocatedInCompilation"
+      ],
       "before": "Every analyzer diagnostic is reported directly ({FACT-FANOUT-reportDiagnostic.count} call sites).",
       "after": "All {FACT-FANOUT-reportDiagnostic.count} call sites now pass through `ReportIfLocatedInCompilation`; a diagnostic without a source location in this compilation is silently dropped.",
-      "alternatives": ["Report at `Location.None` instead of dropping (upstream PR #2305)", "Apply the filter only at the crash sites"],
+      "alternatives": [
+        "Report at `Location.None` instead of dropping (upstream PR #2305)",
+        "Apply the filter only at the crash sites"
+      ],
       "rationale": "intent unknown — no agent session log; commit message says only “implementation for #2283”",
-      "trace": {"to": [], "status": "beyond requirement", "note": "AC1 needs only the crash sites fixed; dropping diagnostics everywhere is not requested."},
-      "dimensions": {"behavior_change": "Yes — some warnings can disappear", "reversibility": "Code revert is easy; missed warnings are not recoverable", "rollout_safety": "Silent — users get no signal", "security": "None identified"},
+      "trace": {
+        "to": [],
+        "status": "beyond requirement",
+        "note": "AC1 needs only the crash sites fixed; dropping diagnostics everywhere is not requested."
+      },
+      "dimensions": {
+        "behavior_change": "Yes — some warnings can disappear",
+        "reversibility": "Code revert is easy; missed warnings are not recoverable",
+        "rollout_safety": "Silent — users get no signal",
+        "security": "None identified"
+      },
       "recommended": "request_change",
       "recommendation_reason": "Scope is far beyond the requirement and the effect is silent; A1 is a policy call."
     },
     {
       "id": "D2",
       "title": "Replace crashing `[0]` lookups with null-safe lookups",
-      "claims": ["src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L985", "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1077", "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1429"],
-      "facts": ["FACT-REQ-ANCHOR", "FACT-BASE-SITES", "FACT-HEAD-SITES-LIVE"],
-      "evidence": ["P1", "P2"],
+      "claims": [
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L985",
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1077",
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1429"
+      ],
+      "facts": [
+        "FACT-REQ-ANCHOR",
+        "FACT-BASE-SITES",
+        "FACT-HEAD-SITES-LIVE"
+      ],
+      "evidence": [
+        "P1",
+        "P2"
+      ],
       "before": "`DeclaringSyntaxReferences[0]` throws IndexOutOfRangeException for members declared in metadata (#2283).",
       "after": "`FirstOrDefault()` and the new helper return null instead of throwing.",
-      "alternatives": ["Use the existing `GetLocation`-style helpers already in the file"],
+      "alternatives": [
+        "Use the existing `GetLocation`-style helpers already in the file"
+      ],
       "rationale": "intent unknown — no agent session log",
-      "trace": {"to": ["AC1"], "status": "traced"},
-      "dimensions": {"behavior_change": "Yes — the crash is removed", "reversibility": "Easy", "rollout_safety": "Safe — removes an exception path", "security": "None identified"},
+      "trace": {
+        "to": [
+          "AC1"
+        ],
+        "status": "traced"
+      },
+      "dimensions": {
+        "behavior_change": "Yes — the crash is removed",
+        "reversibility": "Easy",
+        "rollout_safety": "Safe — removes an exception path",
+        "security": "None identified"
+      },
       "recommended": "accept",
-      "recommendation_reason": "Directly fixes AC1; tests fail on base and pass on head (if P1/P2 hold)."
+      "recommendation_reason": "Directly fixes AC1. Confirmed only when P1 (new tests pass on new code) and P2 (they fail on old code) have run."
     },
     {
       "id": "D3",
       "title": "Document the drop policy in README and MsgPack004 docs",
-      "claims": ["README.md#L1639", "doc/analyzers/MsgPack004.md#L48"],
+      "claims": [
+        "README.md#L1639",
+        "doc/analyzers/MsgPack004.md#L48"
+      ],
       "facts": [],
       "before": "Docs say nothing about types from referenced assemblies.",
       "after": "Docs state that diagnostics for such members are reported only by the defining project.",
-      "alternatives": ["No doc change if D1 is narrowed"],
+      "alternatives": [
+        "No doc change if D1 is narrowed"
+      ],
       "rationale": "consequence of D1",
-      "trace": {"to": [], "status": "follows D1"},
-      "dimensions": {"behavior_change": "No (docs)", "reversibility": "Easy", "rollout_safety": "n/a", "security": "n/a"},
+      "trace": {
+        "to": [],
+        "status": "follows D1"
+      },
+      "dimensions": {
+        "behavior_change": "No (docs)",
+        "reversibility": "Easy",
+        "rollout_safety": "n/a",
+        "security": "n/a"
+      },
       "recommended": "follow_D1",
       "recommendation_reason": "Docs must match whatever is decided for D1."
     },
     {
       "id": "D4",
       "title": "Encode the drop policy in a test (unkeyed member from metadata reports nothing)",
-      "claims": ["tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L499", "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L4", "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L6"],
-      "facts": ["FACT-SKIP-GENERATED"],
-      "evidence": ["P1"],
+      "claims": [
+        "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L499",
+        "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L4",
+        "tests/MessagePack.SourceGenerator.Tests/GenericsFormatterTests.cs#L6"
+      ],
+      "facts": [
+        "FACT-SKIP-GENERATED"
+      ],
+      "evidence": [
+        "P1"
+      ],
       "before": "No test for metadata-reference generics.",
       "after": "Three tests compile a library to metadata and reference it; one asserts that no diagnostic is reported for an unkeyed member.",
-      "alternatives": ["Assert the diagnostic is reported at `Location.None` (PR #2305 style)"],
+      "alternatives": [
+        "Assert the diagnostic is reported at `Location.None` (PR #2305 style)"
+      ],
       "rationale": "intent unknown",
-      "trace": {"to": ["AC1", "AC2"], "status": "partly traced — the unkeyed-member test pins D1's policy"},
-      "dimensions": {"behavior_change": "No (tests)", "reversibility": "Easy", "rollout_safety": "n/a", "security": "n/a"},
+      "trace": {
+        "to": [
+          "AC1",
+          "AC2"
+        ],
+        "status": "partly traced — the unkeyed-member test pins D1's policy"
+      },
+      "dimensions": {
+        "behavior_change": "No (tests)",
+        "reversibility": "Easy",
+        "rollout_safety": "n/a",
+        "security": "n/a"
+      },
       "recommended": "follow_D1",
       "recommendation_reason": "Tests written by the same agent pin its own policy choice."
     }
   ],
-
   "findings": [
     {
       "id": "F1",
       "title": "Positional-record properties now lose MsgPack005 silently",
-      "claims": ["src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L985", "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1429"],
-      "facts": ["FACT-PRECEDENT-PARAMSYNTAX", "FACT-HELPER-SHAPE"],
-      "evidence": ["P4b", "P4h"],
+      "claims": [
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L985",
+        "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L1429"
+      ],
+      "facts": [
+        "FACT-PRECEDENT-PARAMSYNTAX",
+        "FACT-HELPER-SHAPE"
+      ],
+      "evidence": [
+        "P4b",
+        "P4h"
+      ],
       "argument": "The new helper matches only `PropertyDeclarationSyntax`. For `record R([property: Key(null)] string X)` the declaration is a `ParameterSyntax`, so the location is null, and the new filter drops the diagnostic. The base file already handles `ParameterSyntax` elsewhere.",
-      "confirm_if": {"P4b": {"failed_min": 1, "message_any": ["AD0001", "InvalidCast"]}, "P4h": {"failed_min": 1, "message_any": ["MsgPack005"]}},
-      "disprove_if": {"P4h": {"passed_min": 1}},
+      "confirm_if": {
+        "P4b": {
+          "failed_min": 1,
+          "message_any": [
+            "AD0001",
+            "InvalidCast"
+          ]
+        },
+        "P4h": {
+          "failed_min": 1,
+          "message_any": [
+            "MsgPack005"
+          ]
+        }
+      },
+      "disprove_if": {
+        "P4h": {
+          "passed_min": 1
+        }
+      },
       "severity": "medium",
       "fix_hint": "Handle `ParameterSyntax` in the helper, as the base file already does; report instead of dropping when the member is in source."
     }
   ],
-
   "abstentions": [
     {
       "id": "A1",
@@ -133,28 +325,101 @@
       "human_action": "Accept as residual risk, or request a round-trip test."
     }
   ],
-
   "not_checked": [
     "Runtime serialization round-trip of the generated resolver",
     "net472 / netstandard targets (tests run on net8.0 only)",
     "Other analyzers and code fixes in the repository",
     "Downstream consumers that rely on these diagnostics"
   ],
-
   "what_to_do": [
-    {"text": "Decide D1: keep dropping all diagnostics, narrow it to the crash sites, or report like PR #2305 (A1 is a policy call).", "refs": ["D1", "A1"]},
-    {"text": "Check finding F1 against its evidence (P4b, P4h): positional records may lose MsgPack005.", "refs": ["F1"]},
-    {"text": "Accept A2 as residual risk or ask for a round-trip test.", "refs": ["A2"]}
+    {
+      "text": "Decide D1: keep dropping all diagnostics, narrow it to the crash sites, or report like PR #2305 (A1 is a policy call).",
+      "refs": [
+        "D1",
+        "A1"
+      ]
+    },
+    {
+      "text": "Check finding F1 against its evidence (P4b, P4h): positional records may lose MsgPack005.",
+      "refs": [
+        "F1"
+      ]
+    },
+    {
+      "text": "Accept A2 as residual risk or ask for a round-trip test.",
+      "refs": [
+        "A2"
+      ]
+    }
   ],
-
   "quiz": [
-    {"id": "Q1", "kind": "choice", "question": "How many call sites now pass through the new filter?",
-     "options_from": "fanout", "fact": "FACT-FANOUT-reportDiagnostic", "explain": "Counted by the bot from the head file (FACT-FANOUT-reportDiagnostic)."},
-    {"id": "Q2", "kind": "line", "question": "Which changed line makes the filter apply to every diagnostic?",
-     "answer": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L239", "explain": "The constructor wraps the single reportDiagnostic delegate (FACT-FANOUT-reportDiagnostic)."},
-    {"id": "Q3", "kind": "choice", "question": "Before this change, what happened for a positional record property with `[property: Key(null)]`?",
-     "options": ["The analyzer crashed (AD0001)", "MsgPack005 was reported", "Nothing was reported"], "answer_from_proof": "P4b",
-     "answer_rule": {"AD0001": 0, "InvalidCast": 0, "MsgPack005": 1}, "fallback_answer": 0, "explain": "From the executed probe P4b on the base revision."},
-    {"id": "Q4", "kind": "free", "question": "In one sentence: what could break for users if this merges as is?"}
-  ]
+    {
+      "id": "Q1",
+      "kind": "choice",
+      "question": "How many call sites now pass through the new filter?",
+      "options_from": "fanout",
+      "fact": "FACT-FANOUT-reportDiagnostic",
+      "explain": "Counted by the bot from the head file (FACT-FANOUT-reportDiagnostic)."
+    },
+    {
+      "id": "Q2",
+      "kind": "line",
+      "question": "Which changed line makes the filter apply to every diagnostic?",
+      "answer": "src/MessagePack.SourceGenerator/CodeAnalysis/TypeCollector.cs#L239",
+      "explain": "The constructor wraps the single reportDiagnostic delegate (FACT-FANOUT-reportDiagnostic)."
+    },
+    {
+      "id": "Q3",
+      "kind": "choice",
+      "question": "Before this change, what happened for a positional record property with `[property: Key(null)]`?",
+      "options": [
+        "The analyzer crashed (AD0001)",
+        "MsgPack005 was reported",
+        "Nothing was reported"
+      ],
+      "answer_from_proof": "P4b",
+      "answer_rule": {
+        "AD0001": 0,
+        "InvalidCast": 0,
+        "MsgPack005": 1
+      },
+      "fallback_answer": 0,
+      "explain": "From the executed probe P4b on the base revision."
+    },
+    {
+      "id": "Q4",
+      "kind": "free",
+      "question": "In one sentence: what could break for users if this merges as is?"
+    }
+  ],
+  "summary": {
+    "what": "Stops the source generator and analyzer from crashing on closed generic value types from a referenced assembly (MessagePack #2283) by making two syntax lookups null-safe — and, beyond the request, by silently dropping every analyzer warning that has no source location in the current project.",
+    "verdict": "Request changes is likely: the crash fix looks right, but the extra filter changes all analyzer warnings and may hide a real one (F1)."
+  },
+  "acceptance_criteria_trace": {
+    "AC1": {
+      "by": [
+        "D2"
+      ],
+      "proofs": [
+        "P1",
+        "P2"
+      ]
+    },
+    "AC2": {
+      "by": [
+        "D4"
+      ],
+      "proofs": [
+        "P1"
+      ]
+    },
+    "AC3": {
+      "by": [],
+      "proofs": [
+        "P3"
+      ],
+      "note": "No decision claims AC3; only the full test suite (P3) speaks to it, and it does not cover diagnostics — see F1."
+    }
+  }
 }

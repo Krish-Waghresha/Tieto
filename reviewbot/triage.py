@@ -182,8 +182,9 @@ def run(files: list[FileDiff], policy: dict, sources: dict[str, tuple[str, str]]
 
     # tier
     tier = policy.get("default_tier", "STANDARD")
-    all_ws = all(h.whitespace_only() for f in files for h in f.hunks)
-    docs_only = all(rel(f.path).endswith(".md") for f in files)
+    textual = bool(files) and all(f.hunks and not f.binary for f in files)
+    all_ws = textual and all(h.whitespace_only() for f in files for h in f.hunks)
+    docs_only = textual and all(rel(f.path).endswith(".md") for f in files)
     if (all_ws or docs_only) and not [x for x in fired if x.tier in ("STANDARD", "DEEP") and not (docs_only and x.rule == "R-DOCS-POLICY")]:
         tier = "LIGHT"
     for x in fired:

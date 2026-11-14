@@ -60,9 +60,13 @@ def evaluate(spec: list[dict], runs: dict[str, dict]) -> list[dict]:
             tests = [t for t in tests if not ex.search(t["name"])]
         passed = sum(t["outcome"] == "Passed" for t in tests)
         failed = sum(t["outcome"] == "Failed" for t in tests)
-        if not tests:
+        unknown = len(tests) - passed - failed
+        if unknown:
             result = "UNSUPPORTED"
-            note = "No matching tests in the execution record (build failure or filter mismatch)."
+            note = f"{unknown} test(s) with outcome other than Passed/Failed (timeout, not executed, error) — never counted as a pass"
+        elif not tests:
+            result = "UNSUPPORTED"
+            note = "No matching tests in the execution record (build failure or filter mismatch) — not a pass."
         elif p["expect"] == "all_pass":
             result = "HOLDS" if failed == 0 and passed > 0 else "VIOLATED"
             note = f"{passed} passed, {failed} failed"
@@ -78,6 +82,7 @@ def evaluate(spec: list[dict], runs: dict[str, dict]) -> list[dict]:
             note=note,
             passed=passed,
             failed=failed,
+            unknown=unknown,
             tests=tests[:12] if p["expect"] != "all_pass" or failed else [],
             test_count=len(tests),
             command=meta.get("command", ""),

@@ -26,17 +26,44 @@ def cmd_review(a) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "ledger.json").write_text(json.dumps(L, indent=2, default=str))
-    (out / "comment.md").write_text(render_md.render(L, report_url=a.report_url, prefix=a.prefix))
+    (out / "comment.md").write_text(render_md.render(L, report_url=a.report_url))
     (out / "report.html").write_text(render_html.render(L, prefix=a.prefix))
+    (out / "REPORT.md").write_text(render_md.render(L, prefix=a.prefix, full=True))
     print(json.dumps({"tier": L["triage"]["tier"], "open_items": L["open_items"], "coverage_complete": L["coverage"]["complete"],
                       "problems": L["problems"], "ledger": L["ledger_sha256"][:12]}))
     return 0
 
 
+def cmd_comment(a) -> int:
+    L = json.loads(Path(a.ledger).read_text())
+    Path(a.out).write_text(json.dumps({"body": render_md.render(L, report_url=a.report_url)}))
+    return 0
+
+
 def cmd_sign(a) -> int:
     L = json.loads(Path(a.ledger).read_text())
-    res = sign.validate(Path(a.body_file).read_text(), L, a.signer, a.head, a.author, review_state=a.review_state)
+    res = sign.validate(Path(a.body_file).read_text(), L, a.signer, a.head, a.author, review_state=a.review_state,
+                        author_association=a.association, head_commit_authors=[x for x in a.commit_authors.split(",") if x], pr_number=a.pr)
     Path(a.out).write_text(json.dumps(res, indent=2))
+    rec = res.get("record", {})
+    esc = render_md.md_escape
+    if res["ok"]:
+        head = f"### ✍️ Decision recorded: **{esc(rec['decision'].replace('_', ' '))}** by {render_md.code(a.signer)}"
+    else:
+        head = f"### ⛔ Sign-off rejected for {render_md.code(a.signer)}"
+    lines = [head, ""] + [f"- ❌ {esc(e)}" for e in res["errors"]] + [f"- ⚠️ {esc(w)}" for w in res["warnings"]]
+    if rec:
+        lines += ["", f"<details><summary>Decision record (JSON, sha256 {rec['record_sha256'][:12]})</summary>", "", "```json",
+                  json.dumps(rec, indent=2).replace("```", "ˋˋˋ"), "```", "", "</details>"]
+    lines += ["", "<sub>The AI never signs. Signature: GitHub identity of the reviewer (Sigstore/in-toto attestation proposed).</sub>"]
+    if a.reply:
+        Path(a.reply).write_text(json.dumps({"body": "\n".join(lines)}))
+    if a.status:
+        if not res["ok"]:
+            st, desc = "pending", ("Sign-off rejected: " + res["errors"][0])
+        else:
+            st, desc = ("success" if rec["decision"] == "approve" else "failure"), f"{rec['decision']} signed by {a.signer}"
+        Path(a.status).write_text(json.dumps({"state": st, "context": "decision-record", "description": desc[:139]}))
     print(json.dumps({"ok": res["ok"], "errors": res["errors"], "warnings": res["warnings"]}))
     return 0
 
@@ -65,8 +92,18 @@ def main(argv=None) -> int:
     s.add_argument("--head", required=True)
     s.add_argument("--author", required=True)
     s.add_argument("--review-state", default="")
+    s.add_argument("--association", default="")
+    s.add_argument("--commit-authors", default="")
+    s.add_argument("--pr", default=None)
     s.add_argument("--out", default="out/sign-result.json")
+    s.add_argument("--reply", default="")
+    s.add_argument("--status", default="")
     s.set_defaults(fn=cmd_sign)
+    c = sub.add_parser("comment")
+    c.add_argument("--ledger", required=True)
+    c.add_argument("--report-url", default="")
+    c.add_argument("--out", required=True)
+    c.set_defaults(fn=cmd_comment)
     a = p.parse_args(argv)
     return a.fn(a)
 
