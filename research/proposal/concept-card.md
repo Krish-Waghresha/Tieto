@@ -1,136 +1,103 @@
 > **STATUS: RESEARCH PROPOSAL — NOT FINAL.** Working draft from the research/experiment track (Jakub). Not an agreed design or implementation spec; claims marked pending/simulated/proposed are unverified.
 
-# Concept Card — Evidence-First Review
+# Concept Card — Decision-First Review (v0.2, 2026-11-14)
 
-**The AI builds the case. A named human signs the verdict.**
+**Machines read the lines. Humans own the decisions.**
 
-> DRAFT v0.1 — 2026-11-14. Sources in [findings/00-landscape.md](../findings/00-landscape.md). Items marked *(pending)* are not yet verified and must not be presented as fact.
+Aligned with [pipeline.md](pipeline.md) v0.4. Sources: [takeaways](../findings/takeaways.md), [fact-check](../findings/fact-check-waveB.md).
 
 ---
 
-## The problem in one line
+## Problem
 
-> *"I can have 10 Claude codes all writing code, and it doesn't matter. I'm not going to go any faster if I can't merge those PRs after reviewing them and actually deciding they work."* — Will Wilson (Antithesis), Signals and Threads ep. 26, 00:57
+> *"I can have 10 Claude codes all writing code, and it doesn't matter. I'm not going to go any faster if I can't merge those PRs after reviewing them and actually deciding they work."* — Will Wilson, Signals and Threads ep. 26
 
-Agents now write code faster than humans can read it (agent tokens passed human tokens in Feb 2026; high-AI teams merge +98% PRs while review time rises +91%). The two failure modes are a review bottleneck or a rubber stamp — *"the AI said it was fine."* Today's best AI reviewers find roughly half of real bugs at roughly half precision (Martian benchmark: top F1 ≈ 50–65% depending on run, from secondary sources), so they can **advise** but cannot be the **gate**.
+High-AI teams merge 98% more PRs while PR review time rises 91% (Faros AI 2025). Today's best AI reviewers score roughly 50–65% F1 on code-review benchmarks (Martian; secondary sources) — they can **advise**, not **gate**. The two failure modes are a review bottleneck or a rubber stamp: *"the AI said it was fine."*
 
 ## Recommendation
 
-Stop asking "did someone read every line?" and ask **"which claims about this change are proven, which are only argued, and who accepts what's left?"**
+Reduce every agent-written PR to **the few decisions the agent made**. Each decision carries before/after behavior, alternatives, graded evidence, and a trace to the requirement — or is openly marked unknown. A **named engineer signs exactly those decisions**. A deterministic **coverage check** proves nothing changed that no decision explains. Every escaped defect is traced to the routing rule that let it through, and that area loses its right to lighter review.
 
-Every agent-written PR is turned into a **Review Ledger**:
+**Flow:** Pin → Triage (deterministic verdict engine) → Verify → Extract decisions → Coverage → Brief (minimal PR card + HTML view) → Sign → Learn.
 
-1. **Obligations** — derived from the requirement ID and the diff: *what must be true for this change to be acceptable* (fixes the reported behavior, no regression in X, no new public API, no security-sensitive path touched, tests actually exercise the fix…).
-2. **Evidence per obligation**, each tagged with *how* it is known — never an unexplained confidence score:
+## One vocabulary
 
-   | Tag | Meaning | Example |
-   | --- | --- | --- |
-   | **VERIFIED** | A deterministic tool ran on this exact revision | compiler, Roslyn analyzer, CFG/dataflow query, mutation test |
-   | **TESTED** | Executable tests pass — covers only the cases tested | regression test reproducing the issue |
-   | **ARGUED** | LLM interpretation with cited code locations | "this filter also suppresses diagnostic Y (TypeCollector.cs:1393)" |
-   | **ABSTAINED** | The AI refuses to decide, says why and what would resolve it | "policy choice for maintainers: drop vs report" |
-   | **UNSUPPORTED** | Analysis could not run or the area is out of scope | reflection, missing deps, unsupported language |
-
-3. **Routing per obligation, not per PR** — VERIFIED and well-TESTED obligations in low-risk areas get a light check; ARGUED, ABSTAINED and UNSUPPORTED obligations, and anything in a high-scrutiny path, go to the human. **Unknown is never a pass.**
-4. **A signed decision record** — the named owner records what was checked and by what, what was not and why, the residual risk accepted, and the decision (approve / request changes / reject), bound to the commit SHA.
-5. **Outcome feedback** — reverts, incidents and escaped defects are traced back to the ledger; trust per code area is earned from track record and withdrawn after an escape.
+| Grade | Meaning |
+| --- | --- |
+| **PROVEN** | Deterministic output of a sound/qualified tool on the pinned SHAs — with stated blind spots |
+| **MEASURED** | Executed test/run — bounded by its inputs |
+| **HEURISTIC** | Rule of thumb (linters, path rules, text search) — known false-positive rate |
+| **ARGUED** | LLM interpretation citing hunk/node IDs — never higher, never evidence alone |
+| **ABSTAINED** | AI will not decide — says why and what human action resolves it |
+| **UNSUPPORTED / UNKNOWN** | Could not analyze or classify — always routed to a human, never a pass |
 
 ## Principles
 
 | # | Principle | Balances |
 | --- | --- | --- |
-| 1 | **AI advises, a named human approves.** The AI never merges, approves, or signs. | accountability |
-| 2 | **Evidence over confidence.** Every claim carries its evidence tag and a link to the artifact. No percentages nobody can explain. | confidence, transparency |
-| 3 | **No self-certification.** The authoring agent's summary and its own tests are *inputs*, not evidence. Tests are checked independently (deleted/weakened tests flagged; mutation testing on high-risk paths). (Optiver, Jane Street) | hallucination, quality |
-| 4 | **Abstention is a feature.** The reviewer must say what it did not decide. A ledger with zero abstentions on a non-trivial change is itself suspicious. | hallucination, risk |
-| 5 | **Depth follows risk, not size.** Each path has an owner and a scrutiny tier (Jane Street Iron, Cloudflare). A one-line auth change gets a full read; a 200-line doc change may not. | risk, cost |
-| 6 | **Deterministic first, LLM second.** Tools discharge what they can; the LLM explains what remains and proposes findings that must be verified before posting. Precision over recall. | quality, noise |
-| 7 | **Evidence expires.** A new commit invalidates the ledger for affected obligations. | correctness |
-| 8 | **Repo content is untrusted input.** PR text, code comments and docs cannot change review policy; analysis runs sandboxed without secrets. | security |
-| 9 | **Trust is per area, earned and withdrawn.** Lighter review is a privilege granted from track record and revoked after an escape. | risk, scale |
+| 1 | **AI advises, a named human approves.** The AI never merges, approves, or counts toward required reviewers; the agent's prompter cannot sign. | accountability |
+| 2 | **Deterministic verdict, AI as input.** Tiers come from unit-tested rules; LLM output is ARGUED at most (Rewind; DO-330 logic). | confidence, hallucination |
+| 3 | **Evidence over confidence.** Every claim carries a grade and a link to its artifact — no unexplained percentages. | transparency |
+| 4 | **No self-certification.** Agent-written tests must fail on base and pass on head; the originating failure is re-run (Optiver, Uber FixrLeak). | quality |
+| 5 | **Unknown is never a pass.** Abstentions and unsupported analysis are first-class outcomes routed to humans. | risk |
+| 6 | **Depth follows risk, not size.** Protected paths and rules each cite their origin (incident or regulation); "the depth of the review shall be proportionate to the magnitude of the proposed change" (RTS 6 Art. 11(1)). | risk, cost |
+| 7 | **The model can suggest, but never define.** AI findings must map to a rules index and survive a disprove-it pass before a human sees them (G-Research, DoorDash). | noise, hallucination |
+| 8 | **Evidence expires; repo content is untrusted.** New commits invalidate affected items; PR text and code cannot change policy; triage uses the base revision's policy. | security, correctness |
+| 9 | **Trust is per area, earned and withdrawn.** Escapes revoke lighter review; policy is periodically re-certified. | scale, risk |
 
-## Review mechanics — borrowed from Jane Street's Iron
+## What is borrowed vs new
 
-Jane Street has run mandatory, ownership-based review for 10+ years and in 2026 named the problem directly: *"the whole existence of AI agents has kind of broken the social contract around code review… now all you need is a prompt and a dream and you can for free create a plausible looking problem. But it's still hard work to verify that it makes sense."* (Ron Minsky, Signals and Threads ep. 31, 01:43:33). We adapt their mechanics to a GitHub-style flow:
+- **Borrowed (practicality):** risk routing (Cloudflare, Meta RADAR, Zalando, Rewind, Intercom, Adyen), deterministic verdict engines and protected paths (Rewind), proportionate review (MiFID II RTS 6), per-path ownership (Jane Street Iron), single evidence queue (NASA JPL SCRUB).
+- **New:** decisions instead of comments · coverage check for missed decisions · graded evidence with ABSTAINED/UNSUPPORTED · signed decision record feeding per-area trust. No product or published practice we found combines these.
 
-| Mechanic | Iron (Jane Street) | Evidence-First Review |
+## Worked example — `ju26-issue-2283` (MessagePack-CSharp)
+
+**Requirement #2283:** generator/analyzer crash (`IndexOutOfRangeException`) on closed generic value types from referenced assemblies. **Change:** commit `9df83c38` on base `32258fdb`.
+
+| Item | Content | Status |
 | --- | --- | --- |
-| **Ownership + tier in the repo** | Each file declares owner and "scrutiny" (required reviewers, n of k) | `REVIEW_POLICY` file per path: owner, risk tier, required ladder rung, human quorum. AI may count toward *k*, never as the required human |
-| **Escalation resets approval** | Raising scrutiny forces re-review from scratch | Raising a path's tier, or a change touching a higher-tier path, invalidates prior light-route decisions |
-| **Attestation "brain"** | Per person/branch record of exactly what they read; "you never have to read a commit twice" | Decision record stores exactly which obligations and hunks the human attested. After an agent amends code, the human sees only the delta; **an approval never covers code nobody attested** |
-| **Seconder** | A named co-designer explicitly signs off before file reviewers | Order: deterministic checks → AI first pass → **named human seconder** → owners of high-tier paths. The AI is never the seconder |
-| **CRs live in the code** | Review comments must be resolved or reassigned before release | Every AI finding and abstention needs a human resolution: *fixed / rejected with reason / deferred to owner*. Overrides become the audit trail and the training signal for the reviewer |
-| **Hard release gate** | "If you haven't fully reviewed a branch, you can't release it." | Merge is blocked by tooling — not policy text — while obligations are unresolved or evidence is stale |
-| **Evaluate the reviewer** | AI review model replied "I'll do it tomorrow" — imitating humans ≠ doing the task; graders checked by "meta graders" | The AI reviewer is scored on held-out known bugs and on escapes, not on how human it sounds; gaming of the gate is a monitored risk |
-| **Merit, not only correctness** | AI PRs treated as prototypes; "too many knobs" | One obligation always routed to the human: *should this change exist in this form?* |
-
-What does **not** transfer: OCaml's type system doing much of the verification for free, a custom monorepo review tool, and a firm that pays for heavy review culture. A GitHub/Azure DevOps flow needs bots and branch protection to approximate this — hence the reference implementation is a concept, not a product.
-
-## Verification ladder — what evidence each risk tier requires
-
-Each path has a scrutiny tier. Higher tiers must climb further before an obligation counts as discharged. Whatever the ladder does not discharge goes to the named human — **plus the spec itself**, since a proof against the wrong requirement proves nothing.
-
-| Rung | Evidence | Required from | Lesson behind it |
-| --- | --- | --- | --- |
-| 1 | Compiler, warnings-as-errors | all tiers (gate) | zero false positives at build time (Google) |
-| 2 | Analyzers (Roslyn, banned-API rules, nullable) | all tiers | rule with >10% "not useful" is demoted to advisory (Google Tricorder) |
-| 3 | Existing tests + golden generated-output diff, explained by the LLM | Tier 1 (low) + | show *exactly* what changed in emitted code |
-| 4 | CFG / dataflow facts on changed methods (new paths, new reads, reachability) | Tier 2 + | discharge specific obligations mechanically, at diff time (Meta Infer: fix rate ~0% batch → >70% diff time) |
-| 5 | Mutation + property / round-trip tests | Tier 2 + — **mandatory when the same agent wrote code and tests** | tests must be shown able to fail (Meta ACH, Optiver) |
-| 6 | Model checking (TLA+, P, Coyote) | Tier 3: concurrency, protocols, distributed state | AWS, Datadog, MongoDB |
-| 7 | Proof on a model + differential testing against real code | Tier 4: crypto, authorization, safety-critical | AWS Cedar, seL4 cost ≈ 25 person-years |
-
-**Delivery rules:** evidence appears in the PR at diff time (not on a dashboard nobody visits — Google, Meta); a finding that cannot be verified is not posted; the reviewer's own "not useful" rate is tracked like any analyzer.
-
-## Worked example (to be completed)
-
-**Requirement:** MessagePack-CSharp issue #2283 — source generator and analyzer crash (`IndexOutOfRangeException`) on closed generic value types from referenced assemblies, leaving AOT apps without a resolver.
-**Change:** branch `ju26-issue-2283`, commit `9df83c38`, ~29 lines in `TypeCollector.cs` + 189 lines of tests.
-
-| Obligation | Tag | Evidence | Route |
-| --- | --- | --- | --- |
-| Crash no longer occurs on the reported shape | TESTED *(pending run)* | New metadata-reference tests `GenericsFormatterTests.cs:507-680` | light |
-| No other diagnostics silently lost | ARGUED → finding *(pending verification)* | New filter `ReportIfLocatedInCompilation` (`TypeCollector.cs:239, 1444-1450`) wraps *all* diagnostics; positional-record properties get `Location.None` and are dropped | **human** |
-| Diagnostic policy for metadata types (drop vs report at `Location.None`) | **ABSTAINED** | Agent drops; upstream PR #2305 reports. Maintainer policy; no authoritative answer | **human** |
-| Generated serializer correct for unkeyed metadata member | **UNSUPPORTED** | Tests skip generated-source check; needs build + round-trip | **human** |
-| No public API change | VERIFIED *(pending tool run)* | API diff | light |
-
-**Expected outcome:** *Request changes* — the AI's finding and abstention give the owner a concrete, checkable reason, without reading all 218 lines.
+| Tier | **DEEP** — diagnostic policy in an analyzer; constructor wraps `reportDiagnostic` (`TypeCollector.cs:239`) so all **30 live call sites** pass the new filter (`:1444-1450`) | manually verified |
+| D1 | Drop diagnostics without in-compilation location — across 30 sites, not just the 2 crash sites; upstream PR #2305 reports at `Location.None` instead | manually verified |
+| D2 | `[0]` → `FirstOrDefault()` + new helper (`:1434`) — the crash fix | manually verified |
+| Coverage | Requirement names 2 crash sites; change filters 30 → scope mismatch card | manually verified |
+| F1 | New helper ignores the `ParameterSyntax` handling already at `:926` in the base → positional-record MsgPack005 goes from crash to silent drop | ARGUED; P4 test proposed |
+| A1 | Drop vs report is a maintainer policy call | ABSTAINED |
+| A2 | Generated serializer for unkeyed metadata member unchecked | UNSUPPORTED |
+| P1–P3 | New tests pass on head / fail on base / golden suite unchanged | proposed → run |
+| Outcome | **Request changes** — keep D2, narrow D1 or adopt #2305, handle `ParameterSyntax` | to be signed by named owner |
 
 ## Trade-offs
 
-- **Less reading vs missed defects** — light routing will let some defects through; we measure escapes and withdraw trust instead of pretending otherwise.
-- **Accessible explanations vs lost nuance** — ARGUED claims can be persuasive and wrong; they are labeled, cite code, and never discharge an obligation alone.
-- **Deeper analysis vs latency/cost** — model checking and proofs only for top-tier paths; most PRs stop at compiler + analyzers + tests.
-- **More abstentions vs more human load** — a reviewer that abstains too much is useless, too little is dangerous; abstention rate is a tracked metric.
+- **Less reading vs missed defects** — LIGHT routing will let some defects through; we measure escapes and withdraw trust rather than pretend otherwise.
+- **Clear explanations vs lost nuance** — ARGUED claims can be persuasive and wrong; uncited sentences are flagged phantom.
+- **Deeper analysis vs latency/cost** — replay, mutation and cross-model review only on DEEP.
+- **More abstentions vs human load** — abstention rate is tracked; too many makes the reviewer useless, too few makes it dangerous.
 
 ## Limits — when not to trust this
 
-- Analysis cannot see reflection, dynamic dispatch, generated code it did not run, missing dependencies, or unsupported languages → tagged UNSUPPORTED, routed to humans.
-- Passing tests prove only tested cases; CFGs describe control flow, not correctness. Neither proves the change right.
-- Incomplete or wrong requirements produce well-evidenced wrong changes. The ledger is only as good as the requirement.
-- Same-model review shares blind spots; use different models / deterministic checks for independence.
-- A polished ledger can create false reassurance — spot-checks of light-routed changes are mandatory.
+- Blind to reflection, DI, dynamic dispatch, external consumers; non-C# languages get no decision extraction.
+- Tests, golden files and replay cover only their inputs; CFG facts describe control flow, not correctness.
+- A wrong requirement yields a well-evidenced wrong change.
+- Visuals aid comprehension; no controlled study shows they raise defect detection.
+- No regulator yet defines review of AI-written code; this is a proposal for that gap, not a compliance claim.
 
-## How trust is measured
+## How trust is measured (3-month shadow pilot — targets, not results)
 
-| Metric | Why | Target direction |
+| Metric | Target | Stop rule |
 | --- | --- | --- |
-| Reverts, incidents, escaped defects per area (with denominators) | Safety must not drop | flat or down |
-| Active human review time vs time to merge (separately) | Efficiency | down |
-| Share of obligations routed to humans + routing reasons | Where attention goes | explained, stable |
-| AI findings verified real / accepted by reviewer (separately) | Reviewer precision | up |
-| Abstention rate and how abstentions were resolved | Calibration | stable, justified |
-| Spot-check false negatives on light-routed changes | Reviewer recall | down |
+| Escapes + reverts + fix-forwards per 100 PRs, by area | not worse than prior 6 months | any Sev1/2 from a LIGHT PR |
+| Active review minutes on STANDARD | −30% | +10% after week 6 |
+| Triage agreement with humans (before go-live) | ≥90% | area stays in shadow |
+| Decision-extraction recall (blind senior reviewer) | ≥85% | <70% |
+| Finding precision / "not useful" rate | ≥70% / ≤10% | <50% for 2 weeks |
+| DEEP share; median cost per PR | ≤30%; <$5 | >50%; >$15 |
 
-**Stop rule:** a critical escape from a light-routed change pauses light review for that area; the area owner investigates and restores eligibility.
+## Who owns what
 
-**Rollout:** one language (C#), narrow check set → shadow mode alongside normal review → limited adoption only after measured results.
-
-## Who owns the decision
-
-The **named engineer** who signs the decision record. Not the agent that wrote the code, not the AI reviewer, not "the process." The record states exactly what they relied on and what risk they accepted.
-
-## Why this isn't already solved
-
-Routing (CodeRabbit, gitStream, Cloudflare), ticket traceability (Qodo, Baz, Aviator) and deterministic-vs-AI separation (Semgrep) exist separately. **No product produces an abstention record, a signed decision record, or tracks the reviewer's misses to earn and withdraw per-area trust.** Evidence-First Review is an accountability layer *over* existing reviewers and analyzers, not another reviewer competing on F1.
+| Thing | Owner |
+| --- | --- |
+| Merge decision | Named signer (not the agent's prompter) |
+| DEEP co-sign | Owner of the highest-tier path touched |
+| `REVIEW_POLICY` | Area owners; changes are DEEP; re-certified periodically |
+| Verdict engine + reviewer AI metrics | Platform team |
+| Restoring LIGHT after an escape | Area owner, recorded |
