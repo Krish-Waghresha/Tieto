@@ -73,7 +73,7 @@ Each reviewer read the files directly (not our summary) to avoid anchoring on ou
 ## 4. Hackathon demo feasibility
 
 - `dotnet` not installed; `global.json` pins SDK 8.0.402. Sandbox via `mcr.microsoft.com/dotnet/sdk:8.0.402`.
-- Correction: **30 live `reportDiagnostic` call sites** (29 `?.Invoke` + 1 direct at :1188), not 34. *(Verified by us.)*
+- Correction: the agent said **30 live call sites**; this was later shown wrong. The demo bot counts **28** (29 `?.Invoke` minus 2 commented out, + 1 direct at :1188). See decisions-log.
 - Strengthened finding: base already handles `ParameterSyntax` at `TypeCollector.cs:926`; agent's helper at `:1434` ignores it. *(Verified by us.)*
 - Proofs P1–P5 with commands and the P4 test sketch: see [../proposal/demo-plan.md](../proposal/demo-plan.md).
 - Generate the HTML from a JSON ledger so the "brief from ledger only" rule is enforced; label simulated vs proposed.

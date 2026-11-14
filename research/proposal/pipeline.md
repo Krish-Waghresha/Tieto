@@ -87,7 +87,7 @@ The verdict is computed by **plain, unit-tested code** over deterministic facts 
 | R-DIAG-POLICY | diagnostic/emit policy in analyzers & generators → DEEP | 2283 worked example |
 | R-RULES-CHANGE | policy, analyzer config, `NoWarn`, build/CI, dependencies, approved snapshots → DEEP + policy-owner sign-off | red-team review (agent edits its judge) |
 | R-DEPLOY | deploy and rollback scripts/config → DEEP | Knight Capital (SEC order 34-70694: rollout missed one of eight servers; no second-person review) |
-| R-CROSSCUT | fan-out above threshold → DEEP | 2283: 2 crash sites vs 30 call sites |
+| R-CROSSCUT | fan-out above threshold → DEEP | 2283: 2 crash sites vs 28 call sites |
 | R-SIZE | very large PRs → DEEP or split request (size never *lowers* a tier) | Vercel (100+ changed files always HIGH, largest monorepo); Rewind: risk "has almost nothing to do with its line count" |
 | R-UNKNOWN | analysis UNSUPPORTED / unclassifiable → human | Adyen "unknown" tag |
 
@@ -130,7 +130,7 @@ Every AI finding passes three gates before a human sees it:
 
 ### [4] Coverage — detecting missed decisions (deterministic)
 1. **Hunk/CFG reconciliation:** every changed hunk and CFG delta (new branch, early return, catch/swallow, changed constant/default, removed call) is claimed by a decision or fact, or marked "mechanical consequence of Dk". Unclaimed → **"unexplained change" card**, tier +1.
-2. **Scope fan-out:** decision's stated scope vs `SymbolFinder` reach. *2283: requirement names 2 crash sites; change filters 30 call sites.*
+2. **Scope fan-out:** decision's stated scope vs `SymbolFinder` reach. *2283: requirement names 2 crash sites; change filters 28 call sites.*
 3. **Differential behavior:** base vs head on test corpus (+ replay / generated inputs on DEEP); every output-difference cluster maps to a decision.
 4. **Changed expectations:** changed expected values in pre-existing tests or golden files are mandatory cards.
 5. **Extractor recall** measured offline with planted decisions — a metric, not a gate.
@@ -223,14 +223,14 @@ All targets are proposals, not results. **Mini-replay (illustrative, n=4):** tri
 | Stage | Result | Status |
 | --- | --- | --- |
 | Pin | base `32258fdb` (repo default branch, dependabot), head `9df83c38`, requirement #2283 | manually verified |
-| Triage | **DEEP** — R-DIAG-POLICY + R-CROSSCUT: constructor wraps the single `reportDiagnostic` delegate (`TypeCollector.cs:239`) so all **30 live call sites** go through `ReportIfLocatedInCompilation` (`:1444-1450`); golden tests cover emitted code, not diagnostics | manually verified (source + grep) |
+| Triage | **DEEP** — R-DIAG-POLICY + R-CROSSCUT: constructor wraps the single `reportDiagnostic` delegate (`TypeCollector.cs:239`) so all **28 live call sites** (27 `?.Invoke` + 1 direct call; counted by the demo bot) go through `ReportIfLocatedInCompilation` (`:1444-1450`); golden tests cover emitted code, not diagnostics | manually verified (source + grep) |
 | Verify P1 | new tests `GenericsFormatterTests.cs:507-680` pass on head | proposed → run |
 | Verify P2 | same tests fail on base with the #2283 crash (tests can fail; originating failure re-run) | proposed → run |
 | Verify P3 | full generator suite passes → golden output unchanged for existing inputs | proposed → run |
-| D1 | Drop diagnostics without in-compilation location — across 30 sites, not only the 2 crash sites. Alternative: upstream PR #2305 reports at `Location.None`. Behavior change: yes (diagnostics silently removed) · reversible: yes · security: none | manually verified |
+| D1 | Drop diagnostics without in-compilation location — across 28 call sites, not only the 2 crash sites. Alternative: upstream PR #2305 reports at `Location.None`. Behavior change: yes (diagnostics silently removed) · reversible: yes · security: none | manually verified |
 | D2 | `[0]` → `FirstOrDefault()` + new helper `GetPropertyIdentifierLocation` (`:1434`) — the crash fix | manually verified |
 | D3 | README + MsgPack004 docs describe the drop policy (consequence of D1) | manually verified |
-| Coverage | scope fan-out mismatch: requirement names 2 crash sites, change filters 30 | manually verified |
+| Coverage | scope fan-out mismatch: requirement names 2 crash sites, change filters 28 (14×) | manually verified |
 | Finding F1 | New helper handles only `PropertyDeclarationSyntax`, ignoring the `ParameterSyntax` handling already present at `:926` in the base. Positional-record property with null key: base → crash (AD0001); head → MsgPack005 silently dropped. | ARGUED → P4 test proposed (`NullStringKey_PositionalRecord`) |
 | A1 | Drop vs report is the maintainers' policy; #2305 unmerged, no maintainer comment | ABSTAINED |
 | A2 | Generated serializer for unkeyed metadata member unchecked (tests skip generated-source check) | UNSUPPORTED |

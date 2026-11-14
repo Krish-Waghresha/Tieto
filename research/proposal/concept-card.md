@@ -56,10 +56,10 @@ Reduce every agent-written PR to **the few decisions the agent made**. Each deci
 
 | Item | Content | Status |
 | --- | --- | --- |
-| Tier | **DEEP** — diagnostic policy in an analyzer; constructor wraps `reportDiagnostic` (`TypeCollector.cs:239`) so all **30 live call sites** pass the new filter (`:1444-1450`) | manually verified |
-| D1 | Drop diagnostics without in-compilation location — across 30 sites, not just the 2 crash sites; upstream PR #2305 reports at `Location.None` instead | manually verified |
+| Tier | **DEEP** — diagnostic policy in an analyzer; constructor wraps `reportDiagnostic` (`TypeCollector.cs:239`) so all **28 live call sites** (27 `?.Invoke` + 1 direct call; counted by the demo bot) pass the new filter (`:1444-1450`) | manually verified |
+| D1 | Drop diagnostics without in-compilation location — across 28 call sites, not just the 2 crash sites; upstream PR #2305 reports at `Location.None` instead | manually verified |
 | D2 | `[0]` → `FirstOrDefault()` + new helper (`:1434`) — the crash fix | manually verified |
-| Coverage | Requirement names 2 crash sites; change filters 30 → scope mismatch card | manually verified |
+| Coverage | Requirement names 2 crash sites; change filters 28 → scope mismatch card (14×) | manually verified |
 | F1 | New helper ignores the `ParameterSyntax` handling already at `:926` in the base → positional-record MsgPack005 goes from crash to silent drop | ARGUED; P4 test proposed |
 | A1 | Drop vs report is a maintainer policy call | ABSTAINED |
 | A2 | Generated serializer for unkeyed metadata member unchecked | UNSUPPORTED |
