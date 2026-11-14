@@ -1,3 +1,11 @@
+> **Interactive 7-step review (new):** download [`review-app.html`](review-app.html) and open it in a browser — guided steps, before/after flow graph, pick-before-reveal decisions, quiz, narrated briefing, sign form. Built from branch `demo/ui`. Rendered from a LOCAL run; proofs not executed.
+>
+> | 1 Verdict | 2 What changed | 3 Decisions |
+> |---|---|---|
+> | ![](ui/step1.png) | ![](ui/step2.png) | ![](ui/step3.png) |
+> | **4 Found / won't decide** | **5 Evidence & gaps** | **7 Sign** |
+> | ![](ui/step4.png) | ![](ui/step5.png) | ![](ui/step7.png) |
+
 > **Rendered from a LOCAL run of the bot** (GitHub Actions not enabled on this repo). Proofs not executed. Interactive version: download `report.html` from this folder and open it in a browser (quiz, audio, sign form).
 
 <!-- dfr:sticky -->
