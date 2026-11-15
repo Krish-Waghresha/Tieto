@@ -2,6 +2,13 @@
 !/.gitignore
 !/README.md
 !/classifier/
+!/docs/
+/docs/*
+!/docs/presentation/
+/docs/presentation/*
+!/docs/presentation/index.html
+!/docs/presentation/slides.pdf
+!/docs/presentation/assets/
 node_modules/
 bin/
 obj/

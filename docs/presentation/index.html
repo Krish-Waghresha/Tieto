@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beyond the Diff | The Delusionals | Junction 2026</title>
+<style>
+@font-face { font-family: "Barlow Condensed"; src: url("assets/barlow-condensed-700.woff2"); font-weight: 700; }
+@font-face { font-family: "DM Sans"; src: url("assets/dm-sans-400.woff2"); font-weight: 400; }
+@font-face { font-family: "DM Sans"; src: url("assets/dm-sans-700.woff2"); font-weight: 700; }
+:root { --ink: #0d1117; --white: #f0f6fc; --muted: #b1bac4; --line: #30363d; --green: #7ee787; --orange: #ffa657; --red: #ff7b72; --gray: #b1bac4; --blue: #79c0ff; }
+* { box-sizing: border-box; letter-spacing: 0; }
+html, body { margin: 0; background: var(--ink); color: var(--white); font-family: "DM Sans", sans-serif; }
+.slide { position: relative; width: 1600px; height: 900px; padding: 56px 80px; overflow: hidden; background: linear-gradient(125deg, #0d1117 62%, #17241f); }
+header, footer { display: flex; justify-content: space-between; align-items: center; gap: 32px; font-size: 22px; color: var(--muted); }
+header { height: 32px; }
+header strong { color: var(--green); }
+footer { position: absolute; bottom: 34px; left: 80px; right: 80px; font-size: 20px; }
+h1, h2, h3, .number { font-family: "Barlow Condensed", sans-serif; font-weight: 700; margin: 0; line-height: 1.04; }
+h1 { font-size: 164px; }
+h2 { font-size: 88px; margin-top: 34px; }
+h3 { font-size: 48px; }
+p { margin: 0; font-size: 28px; line-height: 1.4; }
+a { color: inherit; text-underline-offset: 5px; }
+.accent { color: var(--green); }
+.muted { color: var(--muted); }
+.eyebrow { font-size: 22px; font-weight: 700; color: var(--muted); }
+.opener { background: linear-gradient(125deg, #0d1117 50%, #18322a); }
+.opener h1 { margin-top: 98px; }
+.opener .claim { font-size: 45px; max-width: 1200px; margin-top: 32px; }
+.opener .principle { display: flex; gap: 44px; margin-top: 62px; padding-top: 28px; border-top: 2px solid var(--line); font-size: 32px; }
+.opener .principle strong { color: var(--green); }
+.graph { display: block; width: 1440px; height: 488px; margin-top: 24px; }
+.graph text { font-family: "DM Sans", sans-serif; fill: var(--white); text-anchor: middle; font-size: 25px; }
+.graph .small { font-size: 20px; fill: var(--muted); }
+.graph .label { font-weight: 700; }
+.graph rect { fill: #161b22; stroke: #484f58; stroke-width: 2; rx: 7; }
+.graph .ai { stroke: var(--green); fill: #15271c; }
+.graph .human { stroke: var(--orange); fill: #292018; }
+.graph path { stroke: #8b949e; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+.graph-note { font-size: 26px; color: var(--muted); }
+.guidance { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 62px; }
+.guidance section { border-top: 7px solid var(--tone); padding-top: 26px; }
+.guidance h3 { color: var(--tone); font-size: 50px; }
+.guidance p { margin-top: 22px; font-size: 29px; max-width: 315px; }
+.guidance .example { color: var(--muted); font-size: 24px; margin-top: 22px; }
+.distinction { margin-top: 62px; font-size: 35px; }
+.confidence { margin-top: 18px; font-size: 26px; color: var(--muted); }
+.demo-layout { display: grid; grid-template-columns: 420px 1fr; gap: 48px; margin-top: 34px; }
+.metrics { display: flex; gap: 36px; margin-top: 24px; }
+.number { font-size: 84px; display: block; color: var(--green); }
+.counterexample .number { color: var(--red); }
+.metrics p { font-size: 23px; }
+.demo-copy { font-size: 27px; margin-top: 24px; }
+.demo-link { display: block; font-size: 27px; color: var(--blue); margin-top: 26px; }
+figure { margin: 0; }
+.demo-image { display: block; width: 972px; height: 430px; object-fit: contain; background: #0d1117; border: 1px solid var(--line); }
+figcaption { margin-top: 14px; font-size: 22px; color: var(--muted); }
+.scope { position: absolute; left: 80px; right: 80px; bottom: 96px; font-size: 21px; color: var(--muted); line-height: 1.5; }
+.team h2 { font-size: 80px; }
+.contacts { display: grid; grid-template-columns: 1fr 1fr; gap: 76px; margin-top: 32px; }
+.person h3 { font-size: 48px; }
+.contact-media { display: flex; align-items: center; gap: 38px; margin-top: 20px; }
+.portrait { width: 220px; height: 220px; object-fit: cover; border-radius: 50%; }
+.qr { display: block; width: 220px; height: 220px; background: white; }
+.qr img { display: block; width: 100%; height: 100%; }
+.profile { display: inline-block; margin-top: 20px; font-size: 23px; color: var(--blue); }
+.project-links { margin-top: 36px; padding-top: 24px; border-top: 2px solid var(--line); display: flex; justify-content: space-between; gap: 32px; }
+.project-links p { font-size: 21px; color: var(--muted); }
+.project-links a { display: block; margin-top: 8px; font-size: 25px; color: var(--white); }
+@page { size: 1600px 900px; margin: 0; }
+@media print {
+  html, body { width: 1600px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .slide { break-after: page; break-inside: avoid; }
+  .slide:last-child { break-after: auto; }
+}
+@media screen {
+  main { width: 1600px; transform-origin: top left; }
+  .slide + .slide { border-top: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<main>
+  <article class="slide opener" aria-labelledby="title-1">
+    <header><strong>The Delusionals</strong><span>Earned Trust in AI Code / Junction 2026</span></header>
+    <h1 id="title-1">Beyond <span class="accent">the Diff.</span></h1>
+    <p class="claim">AI writes code faster than we can understand it.<br>Review should close that gap.</p>
+    <div class="principle"><strong>Evidence you can check.</strong><span>A decision you own.</span></div>
+    <footer><span>Krish Waghresha / Jakub Piotrowski</span><span>01 / 05</span></footer>
+  </article>
+
+  <article class="slide" aria-labelledby="title-2">
+    <header><strong>The idea</strong><span>Program analysis + AI</span></header>
+    <h2 id="title-2">One evidence base. <span class="accent">Two outputs.</span></h2>
+    <svg class="graph" viewBox="0 0 1440 488" role="img" aria-labelledby="graph-title graph-description">
+      <title id="graph-title">Evidence-backed classification and reviewer understanding</title>
+      <desc id="graph-description">A proposed change flows through program analysis to code facts and dependencies. These facts and available test results form revision-bound evidence. Evidence and linked requirements feed both AI classification and AI-guided understanding. Recommendations and learning tools support a named human's decision.</desc>
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><polygon points="0,0 10,5 0,10" fill="#8b949e"/></marker></defs>
+      <path d="M222 56H263"/><path d="M490 56H533"/><path d="M825 56H853V190H884"/>
+      <path d="M825 190H884"/><path d="M1000 232V261H760V284"/><path d="M1000 261H1240V284"/>
+      <path d="M480 268H600V284"/><path d="M480 268H500V248H1400V284"/>
+      <path d="M760 366V402H914V420"/><path d="M1240 366V402H1100V420"/>
+      <rect x="0" y="16" width="222" height="80"/><text class="label" x="111" y="49">Proposed</text><text x="111" y="78">code change</text>
+      <rect x="267" y="16" width="223" height="80"/><text class="label" x="379" y="49">Program</text><text x="379" y="78">analysis</text>
+      <rect x="538" y="16" width="287" height="80"/><text class="label" x="681" y="49">Code facts</text><text x="681" y="78">and dependencies</text>
+      <rect x="538" y="148" width="287" height="84"/><text class="label" x="681" y="183">Available</text><text x="681" y="213">test results</text>
+      <rect x="888" y="148" width="240" height="84"/><text class="label" x="1008" y="183">Evidence for</text><text x="1008" y="213">this revision</text>
+      <rect x="95" y="225" width="385" height="84"/><text class="label" x="287" y="260">Linked requirements</text><text class="small" x="287" y="290">Intent and business rules</text>
+      <rect class="ai" x="550" y="288" width="420" height="78"/><text class="label" x="760" y="321">AI classification</text><text class="small" x="760" y="350">Recommendation, reasons, unknowns</text>
+      <rect class="ai" x="1030" y="288" width="409" height="78"/><text class="label" x="1234" y="321">AI-guided understanding</text><text class="small" x="1234" y="350">Simulation, audio, explanations, quiz</text>
+      <rect class="human" x="655" y="424" width="720" height="62"/><text class="label" x="1015" y="463">A named human reviews and owns the decision</text>
+    </svg>
+    <p class="graph-note">AI interprets intent. Program analysis checks code facts. Neither gives approval.</p>
+    <footer><span>Findings stay tied to the analyzed revision.</span><span>02 / 05</span></footer>
+  </article>
+
+  <article class="slide" aria-labelledby="title-3">
+    <header><strong>Review guidance</strong><span>Every changed block accounted for</span></header>
+    <h2 id="title-3">Attention follows <span class="accent">the evidence.</span></h2>
+    <div class="guidance">
+      <section style="--tone: var(--green)"><h3>Supported</h3><p>Available evidence supports lighter review.</p><p class="example">Green can include meaningful behaviour changes.</p></section>
+      <section style="--tone: var(--orange)"><h3>Decision needed</h3><p>An intended business rule is undecided.</p><p class="example">Confirm the duplicate-handling policy.</p></section>
+      <section style="--tone: var(--red)"><h3>Failure found</h3><p>A concrete contradiction needs attention.</p><p class="example">A retry stores the same invoice twice.</p></section>
+      <section style="--tone: var(--gray)"><h3>Evidence missing</h3><p>A dependency or contract cannot be inspected.</p><p class="example">Supply the real tax-provider implementation.</p></section>
+    </div>
+    <p class="distinction">Orange asks for a <strong style="color: var(--orange)">decision.</strong> Gray asks for <strong>evidence.</strong></p>
+    <p class="confidence">Evidence-backed confidence, not change complexity. A score cannot override a concrete failure.</p>
+    <footer><span>Guidance directs attention. A human makes the call.</span><span>03 / 05</span></footer>
+  </article>
+
+  <article class="slide" aria-labelledby="title-4">
+    <header><strong>The prototype</strong><span>Synthetic C# invoice import / INV-BULK-26</span></header>
+    <h2 id="title-4">One invoice. <span style="color: var(--red)">Two records.</span></h2>
+    <div class="demo-layout">
+      <div>
+        <p class="muted">1,618 added lines. 15 files.</p>
+        <div class="metrics"><p><span class="number">87</span>passing checks</p><p class="counterexample"><span class="number">1</span>deliberate failure</p></div>
+        <p class="demo-copy">A lost acknowledgement triggers a retry with a new identity.</p>
+        <p class="demo-copy">See it. Hear it. Test your understanding.</p>
+        <a class="demo-link" href="https://youtu.be/O6kLhf_FrNc">Watch the 2:36 demo</a>
+      </div>
+      <figure><a href="https://youtu.be/O6kLhf_FrNc"><img class="demo-image" src="assets/prototype.jpg" width="1920" height="1080" alt="Actual review playground from the continuous prototype recording"></a><figcaption>GitHub findings to interactive review, then back to a human decision.</figcaption></figure>
+    </div>
+    <p class="scope">Real Roslyn analysis and executable checks. AI judgments and confidence are authored demo inputs,<br>not a live model evaluation or calibrated reliability measurements. The playground runs locally.</p>
+    <footer><span>Simulation / Audio explanation / Quiz / Revision-bound handoff</span><span>04 / 05</span></footer>
+  </article>
+
+  <article class="slide team" aria-labelledby="title-5">
+    <header><strong>The Delusionals</strong><span>Beyond the Diff</span></header>
+    <h2 id="title-5">More understanding. <span class="accent">More justified trust.</span></h2>
+    <div class="contacts">
+      <section class="person"><h3>Jakub Piotrowski</h3><div class="contact-media"><img class="portrait" src="assets/jakub.jpg" alt="Jakub Piotrowski" width="220" height="220"><a class="qr" href="https://www.linkedin.com/in/jakub-piotrowski97/" aria-label="Jakub Piotrowski on LinkedIn"><img src="assets/jakub-linkedin.svg" alt="QR code for Jakub's LinkedIn" width="220" height="220"></a></div><a class="profile" href="https://www.linkedin.com/in/jakub-piotrowski97/">linkedin.com/in/jakub-piotrowski97</a></section>
+      <section class="person"><h3>Krish Waghresha</h3><div class="contact-media"><img class="portrait" src="assets/krish.jpg" alt="Krish Waghresha" width="220" height="220"><a class="qr" href="https://www.linkedin.com/in/krish-waghresha/" aria-label="Krish Waghresha on LinkedIn"><img src="assets/krish-linkedin.svg" alt="QR code for Krish's LinkedIn" width="220" height="220"></a></div><a class="profile" href="https://www.linkedin.com/in/krish-waghresha/">linkedin.com/in/krish-waghresha</a></section>
+    </div>
+    <div class="project-links"><div><p>Source code</p><a href="https://github.com/Krish-Waghresha/Tieto">github.com/Krish-Waghresha/Tieto</a></div><div><p>Prototype video</p><a href="https://youtu.be/O6kLhf_FrNc">youtu.be/O6kLhf_FrNc</a></div></div>
+    <footer><span>AI reviews. Humans stay accountable.</span><span>05 / 05</span></footer>
+  </article>
+</main>
+<script>
+function fitSlides() {
+  const scale = Math.min(1, window.innerWidth / 1600);
+  document.querySelector("main").style.zoom = scale;
+}
+window.addEventListener("resize", fitSlides);
+window.addEventListener("beforeprint", () => { document.querySelector("main").style.zoom = 1; });
+window.addEventListener("afterprint", fitSlides);
+fitSlides();
+</script>
+</body>
+</html>

@@ -81,6 +81,7 @@ The prototype walkthrough visits four representative blocks. Its navigation rema
 ## Prototype Demo
 
 - [Watch the prototype demo video](https://youtu.be/O6kLhf_FrNc)
+- [View the five-slide presentation](docs/presentation/slides.pdf)
 - [Prototype implementation](classifier/)
 - [Demonstration pull request](https://github.com/Krish-Waghresha/earned-review-demo/pull/4)
 - [Engine review](https://github.com/Krish-Waghresha/earned-review-demo/pull/4#issuecomment-6885999395)
