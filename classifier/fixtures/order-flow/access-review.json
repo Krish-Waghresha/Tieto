@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "mode": "illustrative-demo",
+  "methodId": "M:HarborOrders.Access.CanSubmit(HarborOrders.User,HarborOrders.Order)",
+  "change": "Authorization now requires an active user or a matching tenant, instead of both.",
+  "whyTitle": "Why human attention",
+  "reason": "An active user can now submit an order belonging to another tenant, contrary to ORD-17.",
+  "narration": "Before this change, authorization required both an active user and a matching tenant. The change replaces AND with OR, so either condition is enough. Consider an active user submitting an order for a different tenant. Before, the request was denied. After, it is allowed. That conflicts with requirement ORD seventeen. An inactive user with a matching tenant is also allowed by the new check. Understanding these examples does not approve the change.",
+  "quiz": {
+    "question": "An inactive user submits an order for their own tenant. What does the new check do?",
+    "options": [
+      { "id": "deny", "label": "Deny it because the user is inactive" },
+      { "id": "allow", "label": "Allow it because the tenant matches" },
+      { "id": "unknown", "label": "There is not enough information" }
+    ],
+    "answer": "allow",
+    "explanation": "OR accepts the matching tenant even when the user is inactive. ORD-17 requires both conditions, so this should be denied."
+  }
+}

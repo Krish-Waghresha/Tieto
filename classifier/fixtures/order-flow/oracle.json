@@ -1,0 +1,9 @@
+{
+  "purpose": "Developer-authored expectations for this synthetic fixture. Never classifier input.",
+  "expected": {
+    "HarborOrders.Access.CanSubmit": "red",
+    "HarborOrders.Pricing.Total": "amber",
+    "HarborOrders.Receipt.Format": "green",
+    "HarborOrders.Shipping.Quote": "gray"
+  }
+}

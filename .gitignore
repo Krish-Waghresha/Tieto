@@ -1,3 +1,13 @@
 /*
 !/.gitignore
 !/README.md
+!/classifier/
+node_modules/
+bin/
+obj/
+__pycache__/
+*.pyc
+.env
+.env.*
+/classifier/out/
+/classifier/test-results/

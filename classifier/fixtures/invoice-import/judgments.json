@@ -1,0 +1,22 @@
+{
+  "origin": "authored-demo",
+  "confidenceMeaning": "Illustrative confidence in requirement compliance, not a calibrated probability of safety",
+  "binding": {
+    "base": "467622c86427a82379baa30fe19a481e6df948bad40fac7ee4f64b64c0ffa208",
+    "head": "e9dd6da14cf76cb82a9a29f8c12f1cce421af8cbcfab00595de18d85ccb64d25",
+    "requirements": "6e38727c6baf839da04693b8183c2ab6699a78d0c6419bdb3e56b4e9d22c54bf"
+  },
+  "testSourceHash": "9aec74c9e400f7e8d3352bd090bbb7fe99d1f14630bfcf75871fc15db5ceda98",
+  "claims": [
+    { "files": ["CsvInvoiceReader.cs"], "requirements": ["INV-101"], "assessment": "supported", "confidence": 0.98, "coversDeclarations": true, "testPrefixes": ["csv."], "summary": "The new reader preserves quoted fields, maps headers, isolates malformed records, and enforces bounded input; source flow and executed boundary checks support INV-101." },
+    { "files": ["InvoiceNormalizer.cs"], "requirements": ["INV-102"], "assessment": "supported", "confidence": 0.97, "coversDeclarations": true, "testPrefixes": ["money."], "summary": "The normalization pipeline uses invariant parsing, explicit rounding, and stable identities; checks include culture changes, malformed amounts, and negative sub-cent values." },
+    { "files": ["InvoiceValidator.cs"], "requirements": ["INV-103"], "assessment": "supported", "confidence": 0.96, "coversDeclarations": true, "testPrefixes": ["validation."], "summary": "The validation rules enforce the specified identity, date, currency, and amount boundaries, with executable checks at the accepted and rejected limits." },
+    { "files": ["BatchReconciler.cs"], "requirements": ["INV-106"], "assessment": "supported", "confidence": 0.98, "coversDeclarations": true, "testPrefixes": ["report."], "summary": "The reconciler counts each input outcome once, separates currency totals, and prevents rejected rows from contributing money; its arithmetic and ordering checks pass." },
+    { "files": ["ReportWriter.cs"], "requirements": ["INV-106"], "assessment": "supported", "confidence": 0.97, "coversDeclarations": true, "testPrefixes": ["json."], "summary": "The new JSON report preserves amounts and identifiers while escaping supplied text and omitting raw supplier data; round-trip and field-minimization checks pass." },
+    { "files": ["DuplicatePolicy.cs"], "requirements": ["INV-104"], "assessment": "clarify", "confidence": 0.72, "coversDeclarations": true, "testPrefixes": ["duplicate."], "summary": "Active duplicates are blocked, but the implementation also blocks cancelled invoices. The requirement does not decide whether that is intended.", "question": "Should cancelled invoices block re-import, or may a replacement be created?" },
+    { "files": ["RetryingInvoiceWriter.cs"], "requirements": ["INV-105"], "assessment": "conflict", "confidence": 0.08, "coversDeclarations": true, "testPrefixes": ["retry."], "summary": "A new invoice ID is allocated on each retry. After a successful commit loses its acknowledgement, the next attempt creates a second invoice." },
+    { "files": ["TaxGateway.cs"], "requirements": ["INV-107"], "assessment": "unknown", "confidence": 0.0, "coversDeclarations": true, "testPrefixes": ["tax."], "summary": "The runtime rate-provider target is unresolved. Passing tests against a controlled stub do not establish the production provider's contract.", "question": "Which implementation and rate/failure contract apply to the tax provider?" },
+    { "files": ["ImportPreview.cs"], "requirements": ["INV-108"], "assessment": "supported", "confidence": 0.94, "coversDeclarations": true, "testPrefixes": ["preview."], "summary": "The dry-run preview preserves row order and reports issues without saving invoices; final attention also depends on duplicate-policy clarification." },
+    { "files": ["BatchImporter.cs"], "requirements": ["INV-109"], "assessment": "supported", "confidence": 0.94, "coversDeclarations": true, "testPrefixes": ["batch."], "summary": "Local checks support partial success, tenant isolation, and failure reporting; the composed importer still depends on retry integrity, duplicate policy, and the tax provider." }
+  ]
+}

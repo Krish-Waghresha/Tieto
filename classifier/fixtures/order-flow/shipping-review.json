@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "mode": "scripted-demo",
+  "methodId": "M:HarborOrders.Shipping.Quote(HarborOrders.Order,System.Object)",
+  "dependencyId": "dynamic:M:HarborOrders.Shipping.Quote(HarborOrders.Order,System.Object):carrier.PriceFor",
+  "change": "Shipping pricing now calls carrier.PriceFor(...).",
+  "whyTitle": "Why unresolved",
+  "reason": "The analysis cannot identify the provider implementation, so its pricing and failure behavior remain unverified.",
+  "scopeNote": "ORD-17 excludes shipping-provider integration.",
+  "question": "What evidence is available for this provider?",
+  "recomputeMs": 2000,
+  "answers": {
+    "implementation": {
+      "label": "Implementation available",
+      "demoColor": "amber",
+      "title": "Evidence supplied; verification pending.",
+      "detail": "The reference is recorded. The provider implementation has not been inspected.",
+      "graphLabel": "Evidence pending"
+    },
+    "contract": {
+      "label": "Contract or documentation only",
+      "demoColor": "red",
+      "title": "Contract recorded; behavior unverified.",
+      "detail": "The guarantee is a reviewer-provided claim, not an implementation check.",
+      "graphLabel": "Contract recorded"
+    },
+    "unknown": {
+      "label": "I don't know",
+      "demoColor": "red",
+      "title": "Still unresolved.",
+      "detail": "Identify the provider implementation before relying on its behavior.",
+      "graphLabel": "Still unresolved"
+    }
+  }
+}

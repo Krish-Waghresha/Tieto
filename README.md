@@ -80,7 +80,7 @@ The prototype walkthrough visits four representative blocks. Its navigation rema
 
 ## Prototype Demo
 
-- [Prototype implementation](https://github.com/Krish-Waghresha/Tieto/tree/demo/attention-first/classifier)
+- [Prototype implementation](classifier/)
 - [Demonstration pull request](https://github.com/Krish-Waghresha/earned-review-demo/pull/4)
 - [Engine review](https://github.com/Krish-Waghresha/earned-review-demo/pull/4#issuecomment-6885999395)
 

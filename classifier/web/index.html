@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="__CSP__">
+  <title>Order pricing | Change map</title>
+  <style>__STYLE__</style>
+</head>
+<body>
+  <header class="topbar"><a class="brand" id="fallback-brand" href="#">__ICON_GIT_PULL_REQUEST__ Earned</a><nav class="repo-breadcrumb" id="repo-breadcrumb" aria-label="Repository" hidden>__ICON_REPO__<a id="repo-owner" target="_blank" rel="noopener noreferrer"></a><span class="repo-divider">/</span><a id="repo-name" target="_blank" rel="noopener noreferrer"></a></nav><span class="run-mode" id="run-mode"></span></header>
+  <main>
+    <section class="heading"><div class="pr-heading"><div class="eyebrow" id="fixture-label">SYNTHETIC CHANGE / ORD-17</div><h1><span id="pr-title">Order pricing</span><span class="pr-number" id="pr-number" hidden></span></h1><div class="pr-meta" id="pr-meta" hidden><span class="pr-state" id="pr-state">__ICON_GIT_PULL_REQUEST__<span id="pr-state-label"></span></span><p><a id="pr-author" target="_blank" rel="noopener noreferrer"></a> <span id="pr-action"></span> <a id="pr-commit-summary" target="_blank" rel="noopener noreferrer"></a> into <a class="branch-label" id="pr-base" target="_blank" rel="noopener noreferrer"></a> from <a class="branch-label" id="pr-head" target="_blank" rel="noopener noreferrer"></a></p></div></div><div class="revision" id="review-context"><span id="change-count"></span><code id="revision"></code></div></section>
+    <nav class="pr-tabs" id="pr-nav" aria-label="Pull request navigation" hidden><a id="pr-conversation-link" target="_blank" rel="noopener noreferrer" title="Open conversation on GitHub">__ICON_COMMENT_DISCUSSION__ Conversation</a><a id="pr-commits-link" target="_blank" rel="noopener noreferrer" title="Open commits on GitHub">__ICON_GIT_COMMIT__ Commits <span class="counter" id="pr-commits-count"></span></a><a id="pr-checks-link" target="_blank" rel="noopener noreferrer" title="Open checks on GitHub">__ICON_CHECKLIST__ Checks</a><a id="pr-files-link" target="_blank" rel="noopener noreferrer" title="Open changed files on GitHub">__ICON_FILE_DIFF__ Files changed <span class="counter" id="pr-files-count"></span></a></nav>
+    <section id="review-session" class="review-session" aria-label="Guided review session" hidden><div class="session-heading"><strong id="session-title">Review episode</strong><span id="session-count"></span><span id="session-position"></span></div><progress id="session-progress" aria-label="Methods visited" value="0" max="1"></progress><button id="session-start">__ICON_PLAY__ <span id="session-start-label">Start review</span></button><div id="session-navigation" class="session-navigation" hidden><button id="session-previous" title="Previous method" aria-label="Previous method">__ICON_CHEVRON_LEFT__</button><button id="session-next"><span id="session-next-label">Next method</span> __ICON_CHEVRON_RIGHT__</button><button id="session-overview" title="Pause and return to overview" aria-label="Pause review">__ICON_SCREEN_FULL__</button></div><span id="session-status" role="status"></span></section>
+    <div class="legend" aria-label="Attention colors"><span><i class="dot green"></i>Light review</span><span><i class="dot amber"></i><span id="amber-legend-label">Inspect behavior</span></span><span><i class="dot red"></i>Human attention</span><span><i class="dot gray"></i>Insufficient evidence</span><span class="context-legend"><i class="outline"></i>Unchanged context</span></div>
+    <div class="workspace" id="workspace">
+      <section class="graph-stage" aria-label="Whole-diff method graph"><svg id="graph" role="group" aria-label="Method dependency graph"></svg><div class="graph-controls"><button id="zoom-in" title="Zoom in" aria-label="Zoom in">__ICON_PLUS__</button><button id="zoom-out" title="Zoom out" aria-label="Zoom out">__ICON_DASH__</button><button id="fit" title="Fit graph" aria-label="Fit">__ICON_SCREEN_FULL__</button></div></section>
+      <div id="review-resizer" role="separator" tabindex="0" aria-label="Resize graph and review card" aria-orientation="vertical" aria-controls="graph detail" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33" title="Drag to resize. Arrow keys adjust; double-click or Enter resets."></div>
+      <aside id="detail" aria-labelledby="detail-title" hidden>
+        <div class="detail-header"><span class="eyebrow" id="detail-kind"></span><button id="close-detail" title="Close details" aria-label="Close details">__ICON_X__</button></div>
+        <div id="session-card-controls" class="session-card-controls" hidden><span id="session-card-position"></span></div>
+        <div class="detail-meta"><span id="detail-status" class="status"></span><span id="detail-confidence" hidden></span></div><h2 id="detail-title" tabindex="-1"></h2>
+        <div class="green-copy" id="green-change" hidden><h3>What changed</h3><p id="green-change-text"></p><h3 id="card-why-title">Why light review</h3></div>
+        <p id="detail-reason"></p>
+        <section id="hallucination-warning" class="hallucination-warning" role="note" aria-labelledby="hallucination-title" hidden><h3 id="hallucination-title">__ICON_ALERT__ Your input is needed</h3><p id="hallucination-message"></p><div id="hallucination-actions"></div></section>
+        <div class="detail-rule" id="standard-rule"><span class="eyebrow">BASIS</span><code id="detail-rule"></code></div><dl id="detail-facts"></dl>
+        <section id="invoice-card-evidence" class="card-evidence" hidden>
+          <details id="green-engine-basis" class="engine-basis" hidden><summary>View analysis</summary><h3 id="card-requirements-summary"></h3><p id="card-requirements-text"></p><h3>Analysis log</h3><ol id="engine-techniques"></ol><h3>Assessment</h3><ol id="engine-ai-path"></ol><p id="engine-green-conclusion"></p></details>
+        </section>
+        <section id="invoice-question" class="gray-review" hidden>
+          <form id="invoice-answer-form"><fieldset><legend id="invoice-question-title"></legend><div id="invoice-answer-options"></div></fieldset><div id="invoice-reference-field" hidden><label for="invoice-reference">Provider contract reference</label><input id="invoice-reference" type="text" maxlength="2000" disabled></div><button type="submit">Save answer & recompute</button></form>
+          <div id="invoice-processing" class="shipping-progress" hidden><div role="status">__ICON_SYNC__ <span id="invoice-processing-text"></span></div><button id="invoice-cancel" type="button">Cancel recompute</button></div>
+          <div id="invoice-answer-result" class="shipping-result" hidden><h3 id="invoice-result-title"></h3><p id="invoice-result-detail"></p><code id="invoice-result-reference"></code><p id="invoice-save-status" role="status"></p><button id="invoice-edit-answer" type="button">Change answer</button></div>
+          <div class="shipping-actions"><button id="invoice-inspect" type="button">__ICON_FILE_DIFF__ Inspect change</button><button id="invoice-next" type="button">Continue __ICON_ARROW_RIGHT__</button></div>
+        </section>
+        <section class="gray-review" id="gray-review" aria-label="Provider clarification" hidden>
+          <p class="shipping-scope" id="shipping-scope"></p>
+          <span class="shipping-demo" title="Scripted transition; no live AI or provider verification">Scripted demo</span>
+          <form id="shipping-form">
+            <fieldset id="shipping-options"><legend id="shipping-question"></legend></fieldset>
+            <div id="shipping-reference-field" hidden><label for="shipping-reference" id="shipping-reference-label">Implementation reference</label><input id="shipping-reference" type="text" maxlength="2000" autocomplete="off" disabled></div>
+            <div id="shipping-guarantee-field" hidden><label for="shipping-guarantee">Relevant guarantee</label><textarea id="shipping-guarantee" rows="3" maxlength="1000" disabled></textarea></div>
+            <button id="shipping-save" type="submit">Save response & recompute</button>
+          </form>
+          <div class="shipping-progress" id="shipping-progress" hidden><div role="status">__ICON_SYNC__ <span id="shipping-phase"></span></div><button id="shipping-cancel" type="button">Cancel recompute</button></div>
+          <div class="shipping-result" id="shipping-result" tabindex="-1" aria-live="polite" hidden><h3 id="shipping-result-title"></h3><p id="shipping-result-detail"></p><code id="shipping-result-reference"></code><p id="shipping-result-guarantee"></p><p id="shipping-storage"></p><button id="shipping-edit" type="button">Change response</button></div>
+          <div class="shipping-actions"><button id="shipping-inspect" type="button">__ICON_FILE_DIFF__ Inspect change</button><button id="shipping-continue" type="button" title="Keep this uncertainty open; no approval is recorded">Continue with unknown __ICON_ARROW_RIGHT__</button></div>
+        </section>
+        <div class="green-actions" id="green-actions" hidden><button id="access-understand" class="primary-action" hidden>__ICON_LIGHT_BULB__ Understand</button><button id="green-continue" class="primary-action" title="Open the next changed block; no approval is recorded">Continue __ICON_ARROW_RIGHT__</button><button id="green-inspect">__ICON_FILE_DIFF__ Inspect change</button><button id="green-add-concern" aria-expanded="false" aria-controls="green-concern-form">__ICON_COMMENT__ <span id="concern-action-label">Add concern</span></button></div>
+        <div id="green-concern" hidden>
+          <div id="saved-concern" hidden><h3>Your concern</h3><p id="concern-value"></p><p id="concern-status" role="status"></p><button id="remove-concern" type="button" class="evidence-source">Remove concern</button></div>
+          <form id="green-concern-form" hidden><label for="green-concern-text">Your concern</label><textarea id="green-concern-text" rows="3" maxlength="2000" required></textarea><div class="concern-controls"><button type="submit">Save concern</button><button id="cancel-concern" type="button">Cancel</button></div></form>
+        </div>
+        <details id="source-change"><summary id="source-summary">Before / after</summary><h3>Before</h3><pre id="before-code"></pre><h3>After</h3><pre id="after-code"></pre></details><details><summary>Scope & limits</summary><p id="scope"></p><p id="model-signal"></p></details>
+      </aside>
+    </div>
+    <footer><span>Color routes attention. It does not approve a merge.</span><div><button id="overall-review-open" hidden>__ICON_CHECK__ Overall sign-off</button><button id="methodology">__ICON_INFO__ Method</button><button id="export">__ICON_DOWNLOAD__ Export analysis</button></div></footer>
+  </main>
+  <dialog id="overall-review-dialog" class="overall-review" aria-labelledby="overall-review-title">
+    <header><h2 id="overall-review-title" tabindex="-1">Overall sign-off</h2><button id="overall-review-close" title="Close overall sign-off" aria-label="Close overall sign-off">__ICON_X__</button></header>
+    <div class="overall-revision"><span>Analyzed commit</span><code id="overall-commit"></code></div>
+    <p id="overall-progress"></p>
+    <details id="overall-findings"><summary id="overall-findings-title">Unresolved findings</summary><ul id="overall-findings-list"></ul></details>
+    <form id="overall-review-form">
+      <label id="overall-risk-field"><input id="overall-risk" type="checkbox" required>I've reviewed the findings and understand the remaining risks.</label>
+      <div class="overall-handoff"><button id="overall-save" type="submit" disabled>__ICON_MARK_GITHUB__ <span id="overall-handoff-label">Continue to GitHub</span></button><a id="overall-github" target="_blank" rel="noopener noreferrer" hidden>__ICON_LINK_EXTERNAL__ Open GitHub review</a></div><p id="overall-review-status" role="status"></p>
+    </form>
+    <details id="overall-comment-section"><summary>Review comment</summary><textarea id="overall-comment" aria-label="Prepared review comment" rows="8" readonly></textarea></details>
+    <p class="overall-local">Identity and final approval stay on GitHub.</p>
+  </dialog>
+  <dialog id="method-dialog" aria-labelledby="method-title"><header><h2 id="method-title">How the colors were assigned</h2><button id="close-method" title="Close method" aria-label="Close method">__ICON_X__</button></header><p id="method-mode"></p><ol><li><strong>Roslyn</strong><span>Method boundaries, resolved calls, control flow, data flow, and token changes.</span></li><li><strong>Attention policy</strong><span>Protected changes and unknowns cannot receive a green label. Changed callees can escalate callers.</span></li><li><strong>Model signal</strong><span>A configured fast classifier can escalate attention. It cannot override a concrete warning or certify safety.</span></li></ol><p class="method-warning">Synthetic developer-authored cases only. Public benchmark evaluation and task-specific calibration have not been completed.</p><p id="green-contract"></p></dialog>
+  <dialog id="diff-dialog" class="diff-dialog" aria-labelledby="diff-title">
+    <header><h2 id="diff-title">__ICON_FILE_DIFF__ <span id="diff-file"></span></h2><div class="diff-stats" aria-label="Changed lines"><span id="diff-additions"></span><span id="diff-deletions"></span></div><button id="close-diff" title="Close diff" aria-label="Close diff">__ICON_X__</button></header>
+    <div class="diff-caption"><span id="diff-method"></span><span>Method diff</span></div>
+    <div class="diff-scroll" id="diff-scroll" tabindex="0" role="region" aria-label="Source diff">
+      <table class="diff-table" aria-label="Unified source diff"><thead><tr class="sr-only"><th scope="col">Old line</th><th scope="col">New line</th><th scope="col">Change</th><th scope="col">Code</th></tr><tr class="diff-hunk"><td colspan="4" id="diff-hunk"></td></tr></thead><tbody id="diff-lines"></tbody></table>
+    </div>
+  </dialog>
+  <dialog id="understand-dialog" class="understand-dialog" aria-labelledby="understand-title">
+    <header><div><h2 id="understand-title">Access.CanSubmit</h2><span class="understand-provenance">Illustrative scenario, not an executed test</span></div><button id="close-understand" title="Close understanding view" aria-label="Close understanding view">__ICON_X__</button></header>
+    <section id="retry-experience" hidden>
+      <div class="retry-tabs" role="tablist" aria-label="Code understanding"><button id="retry-simulation-tab" type="button" role="tab" aria-selected="true" aria-controls="retry-simulation-panel">__ICON_WORKFLOW__ <span>Simulation</span></button><button id="retry-listen-tab" type="button" role="tab" aria-selected="false" aria-controls="retry-listen-panel" tabindex="-1">__ICON_UNMUTE__ <span>Listen to your code</span></button><button id="retry-quiz-tab" type="button" role="tab" aria-selected="false" aria-controls="retry-quiz-panel" tabindex="-1">__ICON_QUESTION__ <span>Take a quiz</span></button></div>
+      <section id="retry-simulation-panel" role="tabpanel" aria-labelledby="retry-simulation-tab" tabindex="0">
+      <div class="retry-toolbar"><div class="retry-invoice">__ICON_FILE_DIFF__ <div><strong id="retry-invoice-number"></strong><span id="retry-invoice-meta"></span></div></div><fieldset class="retry-version"><legend class="sr-only">Code version</legend><label><input id="retry-current" type="radio" name="retry-version" value="current" checked><span>Current code</span></label><label><input id="retry-fixed" type="radio" name="retry-version" value="fixed"><span>Proposed fix</span></label></fieldset></div>
+      <div class="retry-workbench">
+        <section class="retry-main" aria-label="Invoice retry execution">
+          <div class="retry-flow" role="group" aria-label="Retry loop with moving invoice">
+            <svg viewBox="0 0 640 440" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="retry-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"></path></marker></defs><path class="retry-route" data-route="save" d="M140 80 C220 8 420 8 500 80" marker-end="url(#retry-arrow)"></path><path class="retry-route" data-route="ack" d="M540 175 C610 285 430 395 363 365" marker-end="url(#retry-arrow)"></path><path class="retry-route" data-route="retry" d="M278 365 C178 408 36 280 96 178" marker-end="url(#retry-arrow)"></path></svg>
+            <button class="retry-node retry-identity" data-retry-stage="identity" title="Inspect identity creation">__ICON_KEY__<strong>Create ID</strong><code id="retry-identity-value"></code></button>
+            <button class="retry-node retry-store" data-retry-stage="store" title="Inspect the stored invoice">__ICON_DATABASE__<strong>Save invoice</strong><span>Commit to storage</span></button>
+            <div class="retry-acknowledgement"><button class="retry-node" data-retry-stage="ack" title="Inspect the confirmation">__ICON_REPLY__<strong id="retry-confirmation-label">Confirmation lost</strong></button><label><input id="retry-lose-confirmation" type="checkbox" checked>Lose confirmation</label></div>
+            <div class="retry-center"><span id="retry-attempt">Attempt 1</span><strong id="retry-record-count">0</strong><span id="retry-count-label">records stored</span><small>Expected: 1</small></div>
+            <div id="retry-packet" hidden>__ICON_FILE_DIFF__<code id="retry-packet-id"></code></div>
+          </div>
+          <div class="retry-transport"><button id="retry-play" aria-label="Run import" title="Run import"><span id="retry-play-icon">__ICON_PLAY__</span><span id="retry-pause-icon" hidden>__ICON_STOP__</span><span id="retry-play-label">Run import</span></button><button id="retry-back" title="Previous event" aria-label="Previous event">__ICON_CHEVRON_LEFT__</button><button id="retry-next" title="Next event" aria-label="Next event">__ICON_CHEVRON_RIGHT__</button><input id="retry-scrubber" type="range" min="0" max="4" value="0" aria-label="Execution step"><span id="retry-position">1 / 5</span><button id="retry-reset" title="Restart import" aria-label="Restart import">__ICON_SYNC__</button></div>
+          <div class="retry-caption" aria-live="polite"><h3 id="retry-step-title"></h3><p id="retry-step-detail"></p></div>
+        </section>
+        <section class="retry-learning" aria-label="Stored data and source">
+          <section class="retry-storage"><div class="retry-section-heading"><h3>In the database</h3><span class="retry-ledger-rule">Same invoice number</span></div><ul id="retry-ledger" aria-label="Stored invoice records"></ul></section>
+          <section class="retry-source"><div class="retry-section-heading"><h3 id="retry-code-label">Current PR / relevant lines</h3><button id="retry-inspect" title="Open full source diff" aria-label="Open full source diff">__ICON_FILE_CODE__</button></div><ol id="retry-code" aria-label="Source lines for current event"></ol></section>
+        </section>
+      </div>
+      </section>
+      <section id="retry-listen-panel" class="retry-listen retry-focus-panel" role="tabpanel" aria-labelledby="retry-listen-tab" tabindex="0" hidden><h3>Why the retry creates a duplicate</h3><div id="retry-audio-host"></div><p id="retry-audio-status" role="status"></p><h4>Transcript</h4><p id="retry-transcript"></p></section>
+      <section id="retry-quiz-panel" class="retry-prediction retry-focus-panel" role="tabpanel" aria-labelledby="retry-quiz-tab" tabindex="0" hidden><div class="retry-quiz-meta"><span id="retry-quiz-position"></span><span id="retry-quiz-progress" role="status"></span></div><h3 id="retry-quiz-title" tabindex="-1"></h3><p id="retry-quiz-question"></p><fieldset id="retry-answers" aria-labelledby="retry-quiz-question"></fieldset><p id="retry-quiz-feedback" role="status" hidden></p><div class="retry-quiz-navigation"><button id="retry-quiz-back" type="button" title="Previous question" aria-label="Previous question">__ICON_CHEVRON_LEFT__ Previous</button><button id="retry-quiz-next" type="button"><span id="retry-quiz-next-label">Next question</span> __ICON_CHEVRON_RIGHT__</button></div></section>
+    </section>
+    <div class="scenario-controls"><label><input id="scenario-active" type="checkbox" role="switch" checked> <span id="scenario-active-label">User active</span></label><label><input id="scenario-tenant" type="checkbox" role="switch"> <span id="scenario-tenant-label">Tenant matches</span></label><button id="reset-scenario" title="Reset example" aria-label="Reset example">__ICON_SYNC__</button></div>
+    <div id="visual-panel">
+    <div class="authorization-flows">
+      <section class="authorization-lane" aria-labelledby="before-flow-title"><div class="flow-heading"><h3 id="before-flow-title">Before</h3><code>AND</code></div><ol><li class="auth-step"><span>User active?</span><strong id="before-active"></strong></li><li class="flow-arrow" aria-hidden="true">__ICON_ARROW_DOWN__</li><li class="auth-step" id="before-tenant-step"><span>Tenant matches?</span><strong id="before-tenant"></strong></li><li class="flow-arrow" aria-hidden="true">__ICON_ARROW_DOWN__</li><li class="auth-outcome" id="before-outcome"></li></ol></section>
+      <section class="authorization-lane" aria-labelledby="after-flow-title"><div class="flow-heading"><h3 id="after-flow-title">After</h3><code class="changed-operator">OR</code></div><ol><li class="auth-step"><span>User active?</span><strong id="after-active"></strong></li><li class="flow-arrow" aria-hidden="true">__ICON_ARROW_DOWN__</li><li class="auth-step" id="after-tenant-step"><span>Tenant matches?</span><strong id="after-tenant"></strong></li><li class="flow-arrow" aria-hidden="true">__ICON_ARROW_DOWN__</li><li class="auth-outcome" id="after-outcome"></li></ol></section>
+    </div>
+    <section id="scenario-result" class="scenario-result" aria-live="polite"><div><strong id="scenario-verdict"></strong><span><span id="expected-requirement">ORD-17 expected: </span><strong id="expected-outcome"></strong></span></div><p id="scenario-consequence"></p></section>
+    </div>
+    <details id="access-audio-section" class="access-extra"><summary>__ICON_UNMUTE__ Audio explanation</summary><audio id="access-audio" controls preload="metadata" src="__ACCESS_AUDIO__"></audio><p id="access-audio-status" role="status"></p><details><summary>Transcript</summary><p id="access-transcript"></p></details></details>
+    <details class="access-extra"><summary>__ICON_QUESTION__ Check your understanding</summary><form id="access-quiz-form"><fieldset id="access-quiz-options"><legend id="access-quiz-question"></legend></fieldset><button type="submit">Check answer</button></form><p id="access-quiz-feedback" role="status" hidden></p></details>
+    <details class="access-extra"><summary>__ICON_PENCIL__ Reviewer note</summary><form id="access-note-form"><label for="access-reviewer">Reviewer</label><input id="access-reviewer" type="text" maxlength="100" autocomplete="name" required><label for="access-note">Your understanding and remaining concerns</label><textarea id="access-note" rows="3" maxlength="2000" required></textarea><label for="access-confidence">Understanding confidence (self-reported)</label><select id="access-confidence" required><option value="">Select confidence</option><option value="unsure">Unsure</option><option value="somewhat">Somewhat clear</option><option value="clear">Clear</option></select><div class="access-note-actions"><button type="submit">Save note</button><button id="access-note-export" type="button">__ICON_DOWNLOAD__ Export note</button></div><p id="access-note-status" role="status"></p></form></details>
+    <p class="access-limit">Understanding is not approval. This block still requires human attention.</p>
+  </dialog>
+  <script id="analysis" type="application/json">__ANALYSIS__</script>
+  <script id="pr-metadata" type="application/json">__PR_METADATA__</script>
+  <script>__SCRIPT__</script>
+</body>
+</html>

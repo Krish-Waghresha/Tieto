@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="base/*.cs" />
+    <Compile Include="head/*.cs" />
+    <Compile Include="tests/*.cs" />
+  </ItemGroup>
+</Project>
