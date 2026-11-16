@@ -1,6 +1,6 @@
 # Earned Trust in AI Code
 
-A reference concept for [Tieto](https://www.tieto.com/)'s Junction 2026 challenge.
+An evidence-backed AI code review concept and reference implementation for [Tieto](https://www.tieto.com/)'s Junction 2026 challenge.
 
 **AI reviews. Humans stay accountable.**
 
